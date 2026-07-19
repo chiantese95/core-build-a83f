@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Minimappa IRL stile GTA</title>
+
+  <!-- Leaflet 1.9.4 stabile -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQ3ynf3gj2Zl3YCdBqE3w9S8VnK7Z8A="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="">
+  </script>
+
+  <style>
+    :root {
+      --size: 310px;
+      --accent: #7fa6ff;
+      --panel: rgba(7, 10, 15, .86);
+      --text: #fff;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    #hud {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      width: var(--size);
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,.65));
+    }
+
+    #radar-shell {
+      position: relative;
+      width: var(--size);
+      height: var(--size);
+      border: 7px solid rgba(10,12,16,.96);
+      border-radius: 50%;
+      overflow: hidden;
+      background: #aeb3b6;
+      box-shadow:
+        0 0 0 2px rgba(255,255,255,.25),
+        inset 0 0 0 2px rgba(255,255,255,.10);
+    }
+
+    #map {
+      position: absolute;
+      inset: -12px;
+      background: #aeb3b6;
+      filter: grayscale(.78) sepia(.12) contrast(1.28) brightness(1.08);
+    }
+
+    .leaflet-control-container { display: none !important; }
+
+    #vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 400;
+      pointer-events: none;
+      border-radius: 50%;
+      box-shadow:
+        inset 0 0 20px rgba(0,0,0,.30),
+        inset 0 0 58px rgba(0,0,0,.72);
+    }
+
+    #crosshair {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 44px;
+      height: 58px;
+      z-index: 500;
+      transform: translate(-50%, -52%);
+      pointer-events: none;
+    }
+
+    #player-arrow {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 39px solid #fff;
+      transform: translate(-50%, -62%) rotate(0deg);
+      transform-origin: 50% 76%;
+      filter:
+        drop-shadow(0 0 2px #000)
+        drop-shadow(0 2px 2px rgba(0,0,0,.9));
+      transition: transform .25s linear;
+    }
+
+    #player-dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #111;
+      transform: translate(-50%, 8px);
+    }
+
+    #north {
+      position: absolute;
+      z-index: 510;
+      left: 50%;
+      top: 12px;
+      transform: translateX(-50%);
+      color: white;
+      font-weight: 900;
+      font-size: 16px;
+      text-shadow: 0 2px 3px #000;
+      pointer-events: none;
+    }
+
+    #status-dot {
+      position: absolute;
+      right: 25px;
+      top: 26px;
+      z-index: 510;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #f1b400;
+      border: 2px solid rgba(0,0,0,.7);
+    }
+
+    #info {
+      width: calc(var(--size) - 18px);
+      margin: -22px auto 0;
+      position: relative;
+      z-index: 800;
+      color: var(--text);
+      background: var(--panel);
+      border-left: 5px solid var(--accent);
+      border-radius: 2px 8px 8px 2px;
+      padding: 8px 10px 8px 11px;
+      text-shadow: 0 2px 2px #000;
+    }
+
+    #road {
+      font-size: 17px;
+      line-height: 1.1;
+      font-weight: 900;
+      font-style: italic;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #stats {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    #accuracy {
+      opacity: .82;
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    #permission {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0,0,0,.76);
+      z-index: 5000;
+    }
+
+    #permission-card {
+      width: min(420px, 92vw);
+      padding: 20px;
+      border-radius: 14px;
+      background: rgba(20,22,27,.97);
+      color: white;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(0,0,0,.65);
+    }
+
+    #permission button {
+      margin-top: 14px;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 17px;
+      font-weight: 800;
+      background: white;
+      color: black;
+    }
+
+    @media (max-width: 480px) {
+      :root { --size: 275px; }
+      #hud { left: 12px; bottom: 12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="hud">
+    <div id="radar-shell">
+      <div id="map"></div>
+      <div id="north">N</div>
+      <div id="status-dot"></div>
+
+      <div id="crosshair">
+        <div id="player-arrow"></div>
+        <div id="player-dot"></div>
+      </div>
+
+      <div id="vignette"></div>
+    </div>
+
+    <div id="info">
+      <div id="road">RICERCA POSIZIONE…</div>
+      <div id="stats">
+        <span id="speed">0 km/h</span>
+        <span id="heading">0°</span>
+      </div>
+      <div id="accuracy">GPS in attesa</div>
+    </div>
+  </div>
+
+  <div id="permission">
+    <div id="permission-card">
+      <strong>Consenti la posizione</strong>
+      <div style="margin-top:8px;opacity:.85">
+        La minimappa necessita del GPS del telefono.
+      </div>
+      <button id="permission-button">ATTIVA GPS</button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const DEFAULT = { lat: 41.9028, lng: 12.4964 };
+      const ZOOM = 17;
+      const MIN_MOVE_METERS = 1.5;
+      const ADDRESS_UPDATE_MS = 9000;
+
+      const roadEl = document.getElementById("road");
+      const speedEl = document.getElementById("speed");
+      const headingEl = document.getElementById("heading");
+      const accuracyEl = document.getElementById("accuracy");
+      const arrowEl = document.getElementById("player-arrow");
+      const statusDot = document.getElementById("status-dot");
+      const permission = document.getElementById("permission");
+      const permissionButton = document.getElementById("permission-button");
+
+      const map = L.map("map", {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        scrollWheelZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        tap: false,
+        fadeAnimation: true,
+        zoomAnimation: true,
+        markerZoomAnimation: false
+      }).setView([DEFAULT.lat, DEFAULT.lng], ZOOM);
+
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        {
+          maxZoom: 20,
+          subdomains: "abcd",
+          crossOrigin: true
+        }
+      ).addTo(map);
+
+      let lastPosition = null;
+      let lastHeading = 0;
+      let lastAddressAt = 0;
+      let reverseAbort = null;
+
+      function toRadians(value) {
+        return value * Math.PI / 180;
+      }
+
+      function distanceMeters(a, b) {
+        if (!a || !b) return Infinity;
+        const R = 6371000;
+        const dLat = toRadians(b.lat - a.lat);
+        const dLng = toRadians(b.lng - a.lng);
+        const lat1 = toRadians(a.lat);
+        const lat2 = toRadians(b.lat);
+        const x = Math.sin(dLat / 2) ** 2 +
+          Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+      }
+
+      function normalizeHeading(value) {
+        let h = Number(value);
+        if (!Number.isFinite(h)) return lastHeading;
+        h %= 360;
+        if (h < 0) h += 360;
+        return h;
+      }
+
+      function setHeading(value) {
+        lastHeading = normalizeHeading(value);
+        arrowEl.style.transform =
+          `translate(-50%, -62%) rotate(${lastHeading}deg)`;
+        headingEl.textContent = `${Math.round(lastHeading)}°`;
+      }
+
+      async function reverseGeocode(lat, lng) {
+        const now = Date.now();
+        if (now - lastAddressAt < ADDRESS_UPDATE_MS) return;
+        lastAddressAt = now;
+
+        if (reverseAbort) reverseAbort.abort();
+        reverseAbort = new AbortController();
+
+        try {
+          const url =
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2` +
+            `&lat=${encodeURIComponent(lat)}` +
+            `&lon=${encodeURIComponent(lng)}` +
+            `&zoom=18&addressdetails=1`;
+
+          const response = await fetch(url, {
+            signal: reverseAbort.signal,
+            headers: { "Accept-Language": "it" }
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          const a = data.address || {};
+
+          const street =
+            a.road || a.pedestrian || a.footway || a.path ||
+            a.neighbourhood || a.suburb || a.city_district ||
+            a.village || a.town || a.city || "POSIZIONE ATTUALE";
+
+          const number = a.house_number ? ` ${a.house_number}` : "";
+          roadEl.textContent = `${street}${number}`;
+        } catch (error) {
+          if (error.name !== "AbortError") {
+            roadEl.textContent = "POSIZIONE ATTUALE";
+          }
+        }
+      }
+
+      function onPosition(position) {
+        const c = position.coords;
+        const current = { lat: c.latitude, lng: c.longitude };
+        const moved = distanceMeters(lastPosition, current);
+
+        if (!lastPosition || moved >= MIN_MOVE_METERS) {
+          map.panTo([current.lat, current.lng], {
+            animate: true,
+            duration: 0.65,
+            easeLinearity: 0.25,
+            noMoveStart: true
+          });
+          lastPosition = current;
+        }
+
+        const speedKmh =
+          Number.isFinite(c.speed) && c.speed >= 0
+            ? Math.round(c.speed * 3.6)
+            : 0;
+
+        speedEl.textContent = `${speedKmh} km/h`;
+        accuracyEl.textContent =
+          `Precisione GPS ±${Math.round(c.accuracy || 0)} m`;
+
+        if (Number.isFinite(c.heading) && c.heading >= 0 && speedKmh >= 2) {
+          setHeading(c.heading);
+        }
+
+        statusDot.style.background = "#36d66b";
+        permission.style.display = "none";
+        reverseGeocode(current.lat, current.lng);
+      }
+
+      function onPositionError(error) {
+        statusDot.style.background = "#ef4b4b";
+        accuracyEl.textContent =
+          error.code === 1
+            ? "Permesso GPS non concesso"
+            : "Segnale GPS non disponibile";
+
+        if (error.code === 1) {
+          permission.style.display = "flex";
+        }
+      }
+
+      function startTracking() {
+        if (!("geolocation" in navigator)) {
+          roadEl.textContent = "GPS NON SUPPORTATO";
+          accuracyEl.textContent = "WebView senza geolocalizzazione";
+          statusDot.style.background = "#ef4b4b";
+          return;
+        }
+
+        navigator.geolocation.watchPosition(
+          onPosition,
+          onPositionError,
+          {
+            enableHighAccuracy: true,
+            maximumAge: 500,
+            timeout: 15000
+          }
+        );
+      }
+
+      permissionButton.addEventListener("click", () => {
+        permission.style.display = "none";
+        startTracking();
+      });
+
+      window.addEventListener("load", () => {
+        setTimeout(() => map.invalidateSize(), 250);
+        startTracking();
+      });
+    })();
+  </script>
+</body>
+</html>

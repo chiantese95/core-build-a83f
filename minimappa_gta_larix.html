@@ -3,61 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>Minimappa 3D IRL</title>
-
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
-  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+  <title>Minimappa 2.5D Larix</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    :root {
-      --size: 340px;
-      --panel: rgba(7, 10, 14, .94);
-      --accent: #7fa6ff;
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: transparent;
-      font-family: Arial, Helvetica, sans-serif;
-      -webkit-user-select: none;
-      user-select: none;
+    :root { --size: 330px; --accent:#7fa6ff; }
+    * { box-sizing:border-box; }
+    html,body {
+      width:100%; height:100%; margin:0; overflow:hidden;
+      background:transparent; font-family:Arial,Helvetica,sans-serif;
     }
 
     #hud {
-      position: fixed;
-      left: 18px;
-      bottom: 18px;
-      width: var(--size);
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.78));
+      position:fixed; left:18px; bottom:18px;
+      width:var(--size);
+      filter:drop-shadow(0 10px 18px rgba(0,0,0,.76));
     }
 
     #radar {
-      position: relative;
-      width: var(--size);
-      height: var(--size);
-      overflow: hidden;
-      border-radius: 50%;
-      border: 7px solid rgba(8,10,14,.98);
-      background: #11161c;
-      box-shadow:
-        0 0 0 2px rgba(255,255,255,.16),
-        inset 0 0 35px rgba(0,0,0,.24);
+      position:relative;
+      width:var(--size); height:var(--size);
+      border-radius:50%; overflow:hidden;
+      border:7px solid rgba(8,10,14,.98);
+      background:#11161c;
+      box-shadow:0 0 0 2px rgba(255,255,255,.16);
+      perspective:430px;
+    }
+
+    #map-stage {
+      position:absolute;
+      left:-75px; right:-75px; top:-110px; bottom:-90px;
+      transform:perspective(430px) rotateX(52deg) scale(1.30);
+      transform-origin:50% 63%;
+      overflow:hidden;
+      background:#20252b;
     }
 
     #map {
       position: absolute;
-      inset: -25px;
+      inset: -35px;
+      background: #cfd4d8;
+      filter:
+        grayscale(.12)
+        saturate(.82)
+        contrast(1.08)
+        brightness(.88);
     }
 
-    .maplibregl-control-container,
-    .maplibregl-ctrl-logo {
-      display: none !important;
-    }
+    .leaflet-control-container { display:none!important; }
 
     #shade {
       position: absolute;
@@ -68,183 +62,123 @@
       background:
         linear-gradient(
           to bottom,
-          rgba(0,0,0,.04) 0%,
-          rgba(0,0,0,.06) 55%,
-          rgba(0,0,0,.32) 100%
+          rgba(0,0,0,.01) 0%,
+          rgba(0,0,0,.025) 62%,
+          rgba(0,0,0,.13) 100%
         );
       box-shadow:
-        inset 0 0 22px rgba(0,0,0,.22),
-        inset 0 0 58px rgba(0,0,0,.46);
+        inset 0 0 12px rgba(0,0,0,.10),
+        inset 0 0 30px rgba(0,0,0,.20);
     }
 
     #north {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      z-index: 80;
-      transform: translateX(-50%);
-      color: #fff;
-      font-size: 15px;
-      font-weight: 900;
-      letter-spacing: .8px;
-      text-shadow: 0 2px 4px #000;
+      position:absolute; left:50%; top:12px; z-index:80;
+      transform:translateX(-50%);
+      color:white; font-size:15px; font-weight:900;
+      text-shadow:0 2px 4px #000;
     }
 
     #status {
-      position: absolute;
-      right: 23px;
-      top: 23px;
-      z-index: 80;
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      background: #eab308;
-      border: 2px solid rgba(0,0,0,.82);
+      position:absolute; right:23px; top:23px; z-index:80;
+      width:11px; height:11px; border-radius:50%;
+      background:#eab308; border:2px solid rgba(0,0,0,.8);
     }
 
-    #vehicle-scene {
+    #vehicle {
       position: absolute;
       left: 50%;
-      top: 58%;
+      top: 60%;
       z-index: 90;
-      width: 78px;
-      height: 122px;
+      width: 88px;
+      height: 132px;
       transform:
         translate(-50%, -50%)
-        perspective(230px)
-        rotateX(24deg);
-      transform-origin: 50% 62%;
+        perspective(300px)
+        rotateX(31deg)
+        rotateZ(0deg);
+      transform-origin: 50% 63%;
+      transition: transform .25s linear;
       pointer-events: none;
-      filter: drop-shadow(0 9px 6px rgba(0,0,0,.8));
+      filter:
+        drop-shadow(0 11px 7px rgba(0,0,0,.68))
+        drop-shadow(0 2px 2px rgba(255,255,255,.22));
     }
 
     #headlight {
       position: absolute;
       left: 50%;
-      top: -52px;
-      width: 106px;
-      height: 82px;
+      top: -50px;
+      width: 112px;
+      height: 76px;
       transform: translateX(-50%);
-      clip-path: polygon(29% 100%, 71% 100%, 100% 0, 0 0);
+      clip-path: polygon(33% 100%, 67% 100%, 100% 0, 0 0);
       background:
         radial-gradient(
           ellipse at bottom,
-          rgba(255,248,205,.46) 0%,
-          rgba(255,248,205,.18) 46%,
-          rgba(255,248,205,0) 76%
+          rgba(255,250,215,.36) 0%,
+          rgba(255,250,215,.13) 48%,
+          rgba(255,250,215,0) 77%
         );
-      opacity: .72;
+      opacity: .62;
     }
 
-    #vehicle-scene svg {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
+    #vehicle svg { width:100%; height:100%; overflow:visible; }
 
     #info {
-      position: relative;
-      z-index: 100;
-      width: calc(var(--size) - 12px);
-      margin: -26px auto 0;
-      padding: 10px 12px 9px;
-      color: #fff;
-      background:
-        linear-gradient(180deg, rgba(18,22,29,.98), rgba(7,9,13,.98));
-      border-left: 5px solid var(--accent);
-      border-radius: 3px 10px 10px 3px;
-      box-shadow: 0 8px 18px rgba(0,0,0,.5);
-      text-shadow: 0 2px 2px #000;
+      position:relative; z-index:100;
+      width:calc(var(--size) - 12px);
+      margin:-26px auto 0;
+      padding:10px 12px 9px;
+      color:white;
+      background:linear-gradient(180deg,rgba(18,22,29,.98),rgba(7,9,13,.98));
+      border-left:5px solid var(--accent);
+      border-radius:3px 10px 10px 3px;
+      box-shadow:0 8px 18px rgba(0,0,0,.5);
+      text-shadow:0 2px 2px #000;
     }
 
     #road {
-      font-size: 18px;
-      font-weight: 900;
-      font-style: italic;
-      text-transform: uppercase;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size:18px; font-weight:900; font-style:italic;
+      text-transform:uppercase; white-space:nowrap;
+      overflow:hidden; text-overflow:ellipsis;
     }
 
     #stats {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 7px;
-      margin-top: 6px;
-      font-size: 14px;
-      font-weight: 800;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:7px; margin-top:6px; font-size:14px; font-weight:800;
     }
 
     .pill {
-      padding: 3px 7px;
-      border-radius: 5px;
-      background: rgba(255,255,255,.075);
-      border: 1px solid rgba(255,255,255,.1);
-      white-space: nowrap;
+      padding:3px 7px; border-radius:5px;
+      background:rgba(255,255,255,.075);
+      border:1px solid rgba(255,255,255,.1);
+      white-space:nowrap;
     }
 
-    #weather {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    #accuracy {
-      margin-top: 5px;
-      font-size: 10px;
-      opacity: .72;
-    }
-
-    #fallback {
-      position: absolute;
-      inset: 0;
-      z-index: 95;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 25px;
-      text-align: center;
-      color: #fff;
-      background: rgba(5,7,10,.92);
-      font-size: 14px;
-      font-weight: 700;
-    }
+    #weather { display:flex; align-items:center; gap:4px; }
+    #accuracy { margin-top:5px; font-size:10px; opacity:.72; }
 
     #permission {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 5000;
-      background: rgba(0,0,0,.84);
-      padding: 20px;
+      position:fixed; inset:0; display:none;
+      align-items:center; justify-content:center;
+      z-index:5000; background:rgba(0,0,0,.84); padding:20px;
     }
 
     #permission-card {
-      width: min(410px,92vw);
-      padding: 20px;
-      border-radius: 14px;
-      color: #fff;
-      text-align: center;
-      background: #16191f;
+      width:min(410px,92vw); padding:20px; border-radius:14px;
+      color:#fff; text-align:center; background:#16191f;
     }
 
     #permission button {
-      margin-top: 14px;
-      padding: 11px 17px;
-      border: 0;
-      border-radius: 9px;
-      font-size: 16px;
-      font-weight: 900;
+      margin-top:14px; padding:11px 17px;
+      border:0; border-radius:9px;
+      font-size:16px; font-weight:900;
     }
 
     @media(max-width:480px) {
-      :root { --size: 295px; }
-      #hud { left: 12px; bottom: 12px; }
-      #vehicle-scene { width: 68px; height: 106px; }
+      :root { --size:295px; }
+      #hud { left:12px; bottom:12px; }
+      #vehicle { width:64px; height:98px; }
     }
   </style>
 </head>
@@ -252,103 +186,160 @@
 <body>
   <div id="hud">
     <div id="radar">
-      <div id="map"></div>
+      <div id="map-stage"><div id="map"></div></div>
       <div id="north">N</div>
       <div id="status"></div>
 
-      <div id="vehicle-scene">
+      <div id="vehicle">
         <div id="headlight"></div>
-
-        <svg viewBox="0 0 78 120" aria-hidden="true">
+        <svg viewBox="0 0 92 140" aria-hidden="true">
           <defs>
             <linearGradient id="carBody" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#fff"/>
-              <stop offset=".35" stop-color="#f7f7f7"/>
-              <stop offset=".72" stop-color="#d7dbe0"/>
-              <stop offset="1" stop-color="#aeb4bb"/>
+              <stop offset="0" stop-color="#ffffff"/>
+              <stop offset=".30" stop-color="#fafafa"/>
+              <stop offset=".67" stop-color="#dedfe2"/>
+              <stop offset="1" stop-color="#b7bbc0"/>
             </linearGradient>
 
-            <linearGradient id="carGlass" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#82909d"/>
-              <stop offset=".45" stop-color="#35424d"/>
-              <stop offset="1" stop-color="#0e151b"/>
+            <linearGradient id="carSide" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#c4c8cd"/>
+              <stop offset=".5" stop-color="#f4f4f4"/>
+              <stop offset="1" stop-color="#aeb3b8"/>
             </linearGradient>
 
-            <linearGradient id="roofShade" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#fff"/>
-              <stop offset="1" stop-color="#c9cdd2"/>
+            <linearGradient id="glassFront" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#8fa0ad"/>
+              <stop offset=".42" stop-color="#394854"/>
+              <stop offset="1" stop-color="#0d151c"/>
             </linearGradient>
+
+            <linearGradient id="glassRoof" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#394650"/>
+              <stop offset="1" stop-color="#111920"/>
+            </linearGradient>
+
+            <filter id="carShadow" x="-40%" y="-40%" width="180%" height="190%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity=".68"/>
+            </filter>
           </defs>
 
-          <ellipse cx="39" cy="64" rx="28" ry="49" fill="rgba(0,0,0,.38)"/>
+          <!-- ombra a terra -->
+          <ellipse cx="46" cy="76" rx="31" ry="52" fill="rgba(0,0,0,.30)"/>
 
-          <rect x="5" y="22" width="8" height="25" rx="3.5" fill="#080a0d"/>
-          <rect x="65" y="22" width="8" height="25" rx="3.5" fill="#080a0d"/>
-          <rect x="5" y="73" width="8" height="25" rx="3.5" fill="#080a0d"/>
-          <rect x="65" y="73" width="8" height="25" rx="3.5" fill="#080a0d"/>
+          <!-- ruote -->
+          <rect x="7" y="32" width="10" height="29" rx="4" fill="#0b0d10"/>
+          <rect x="75" y="32" width="10" height="29" rx="4" fill="#0b0d10"/>
+          <rect x="7" y="88" width="10" height="29" rx="4" fill="#0b0d10"/>
+          <rect x="75" y="88" width="10" height="29" rx="4" fill="#0b0d10"/>
 
+          <!-- carrozzeria principale -->
           <path
-            d="M24 4
-               Q39 -1 54 4
-               L63 18
-               Q69 31 68 51
-               L68 69
-               Q69 89 61 105
-               Q51 116 39 118
-               Q27 116 17 105
-               Q9 89 10 69
-               L10 51
-               Q9 31 15 18 Z"
+            d="M29 5
+               Q46 -2 63 5
+               L73 22
+               Q79 39 78 61
+               L78 82
+               Q79 105 70 124
+               Q58 136 46 139
+               Q34 136 22 124
+               Q13 105 14 82
+               L14 61
+               Q13 39 19 22 Z"
             fill="url(#carBody)"
             stroke="#171b20"
-            stroke-width="2.6"
+            stroke-width="2.8"
+            filter="url(#carShadow)"
           />
 
-          <path d="M21 8 Q39 1 57 8 L61 24 L17 24 Z"
-                fill="#fbfbfb"
-                stroke="#aeb3b9"
-                stroke-width="1.2"/>
+          <!-- fianchi scolpiti -->
+          <path d="M18 31 Q14 65 19 109" fill="none" stroke="#91979d" stroke-width="2"/>
+          <path d="M74 31 Q78 65 73 109" fill="none" stroke="#91979d" stroke-width="2"/>
 
-          <path d="M18 28 L60 28 L55 46 L23 46 Z"
-                fill="url(#carGlass)"
-                stroke="#0b1116"
-                stroke-width="1.8"/>
-
-          <rect x="20" y="47" width="38" height="34" rx="7"
-                fill="url(#roofShade)"
-                stroke="#abb0b6"
+          <!-- cofano -->
+          <path d="M25 10 Q46 2 67 10 L72 29 L20 29 Z"
+                fill="#fafafa"
+                stroke="#aeb4ba"
                 stroke-width="1.3"/>
 
-          <rect x="27" y="51" width="24" height="24" rx="5"
-                fill="#1a242d"
-                stroke="#080d12"
-                stroke-width="1.5"/>
+          <!-- linee cofano -->
+          <path d="M32 9 L27 28" stroke="#c5c9cd" stroke-width="1.2"/>
+          <path d="M60 9 L65 28" stroke="#c5c9cd" stroke-width="1.2"/>
 
-          <path d="M23 84 L55 84 L60 103 Q39 110 18 103 Z"
-                fill="url(#carGlass)"
+          <!-- fari anteriori -->
+          <path d="M20 17 Q29 10 37 11 L34 17 Q27 20 20 22 Z" fill="#fff6bd"/>
+          <path d="M72 17 Q63 10 55 11 L58 17 Q65 20 72 22 Z" fill="#fff6bd"/>
+
+          <!-- griglia -->
+          <rect x="35" y="12" width="22" height="5" rx="2" fill="#20262b"/>
+          <line x1="39" y1="12.5" x2="39" y2="16.5" stroke="#59616a"/>
+          <line x1="44" y1="12.5" x2="44" y2="16.5" stroke="#59616a"/>
+          <line x1="49" y1="12.5" x2="49" y2="16.5" stroke="#59616a"/>
+          <line x1="54" y1="12.5" x2="54" y2="16.5" stroke="#59616a"/>
+
+          <!-- parabrezza -->
+          <path d="M22 34 L70 34 L64 55 L28 55 Z"
+                fill="url(#glassFront)"
                 stroke="#0b1116"
                 stroke-width="1.8"/>
 
-          <path d="M18 12 Q23 8 30 8 L28 13 Q22 15 18 16 Z" fill="#fff8cc"/>
-          <path d="M60 12 Q55 8 48 8 L50 13 Q56 15 60 16 Z" fill="#fff8cc"/>
+          <!-- montanti -->
+          <path d="M28 55 L22 34" stroke="#252d34" stroke-width="1.7"/>
+          <path d="M64 55 L70 34" stroke="#252d34" stroke-width="1.7"/>
 
-          <path d="M16 97 Q21 101 28 102 L27 107 Q20 106 16 103 Z" fill="#e51d2a"/>
-          <path d="M62 97 Q57 101 50 102 L51 107 Q58 106 62 103 Z" fill="#e51d2a"/>
+          <!-- tetto -->
+          <path d="M27 57 Q46 52 65 57 L67 91 Q46 96 25 91 Z"
+                fill="url(#carSide)"
+                stroke="#a9aeb3"
+                stroke-width="1.4"/>
 
-          <rect x="8" y="34" width="8" height="5" rx="2.5"
-                fill="#eceeef" stroke="#6f757b"/>
-          <rect x="62" y="34" width="8" height="5" rx="2.5"
-                fill="#eceeef" stroke="#6f757b"/>
+          <!-- tetto panoramico -->
+          <path d="M34 60 Q46 57 58 60 L59 83 Q46 87 33 83 Z"
+                fill="url(#glassRoof)"
+                stroke="#080d12"
+                stroke-width="1.4"/>
+
+          <!-- riflesso tetto -->
+          <path d="M37 62 Q46 59 55 62" stroke="rgba(255,255,255,.36)" stroke-width="1.2" fill="none"/>
+
+          <!-- finestrini laterali -->
+          <path d="M18 57 L26 57 L25 90 L18 86 Z"
+                fill="#26323b" stroke="#0b1116" stroke-width="1.1"/>
+          <path d="M74 57 L66 57 L67 90 L74 86 Z"
+                fill="#26323b" stroke="#0b1116" stroke-width="1.1"/>
+
+          <!-- lunotto -->
+          <path d="M28 97 L64 97 L70 119 Q46 128 22 119 Z"
+                fill="url(#glassFront)"
+                stroke="#0b1116"
+                stroke-width="1.8"/>
+
+          <!-- spoiler -->
+          <path d="M26 118 Q46 126 66 118 L68 124 Q46 132 24 124 Z"
+                fill="#dfe2e5"
+                stroke="#969ca2"
+                stroke-width="1"/>
+
+          <!-- stop posteriori -->
+          <path d="M20 112 Q28 117 36 118 L34 124 Q26 122 20 118 Z" fill="#df2029"/>
+          <path d="M72 112 Q64 117 56 118 L58 124 Q66 122 72 118 Z" fill="#df2029"/>
+
+          <!-- specchietti -->
+          <rect x="10" y="45" width="10" height="6" rx="3" fill="#eceeef" stroke="#6d7379"/>
+          <rect x="72" y="45" width="10" height="6" rx="3" fill="#eceeef" stroke="#6d7379"/>
+
+          <!-- maniglie -->
+          <rect x="20" y="68" width="5" height="1.5" rx=".7" fill="#858c92"/>
+          <rect x="67" y="68" width="5" height="1.5" rx=".7" fill="#858c92"/>
+          <rect x="20" y="91" width="5" height="1.5" rx=".7" fill="#858c92"/>
+          <rect x="67" y="91" width="5" height="1.5" rx=".7" fill="#858c92"/>
         </svg>
       </div>
 
       <div id="shade"></div>
-      <div id="fallback">La visualizzazione 3D richiede WebGL.</div>
     </div>
 
     <div id="info">
       <div id="road">RICERCA POSIZIONE…</div>
-
       <div id="stats">
         <span id="speed" class="pill">0 km/h</span>
         <span id="heading" class="pill">0°</span>
@@ -357,7 +348,6 @@
           <span id="temperature">--°C</span>
         </span>
       </div>
-
       <div id="accuracy">GPS in attesa</div>
     </div>
   </div>
@@ -365,9 +355,7 @@
   <div id="permission">
     <div id="permission-card">
       <strong>Consenti la posizione</strong>
-      <div style="margin-top:8px;opacity:.82">
-        La minimappa necessita del GPS del telefono.
-      </div>
+      <div style="margin-top:8px;opacity:.82">La minimappa necessita del GPS del telefono.</div>
       <button id="permission-button">ATTIVA GPS</button>
     </div>
   </div>
@@ -376,9 +364,8 @@
     (() => {
       "use strict";
 
-      const DEFAULT = { lat: 41.9028, lng: 12.4964 };
-      const ZOOM = 16.8;
-      const PITCH = 58;
+      const DEFAULT = {lat:41.9028,lng:12.4964};
+      const ZOOM = 16;
       const ADDRESS_UPDATE_MS = 9000;
       const WEATHER_UPDATE_MS = 5 * 60 * 1000;
 
@@ -386,34 +373,50 @@
       const speedEl = document.getElementById("speed");
       const headingEl = document.getElementById("heading");
       const accuracyEl = document.getElementById("accuracy");
+      const vehicleEl = document.getElementById("vehicle");
       const statusEl = document.getElementById("status");
       const permissionEl = document.getElementById("permission");
       const permissionButton = document.getElementById("permission-button");
       const temperatureEl = document.getElementById("temperature");
       const weatherIconEl = document.getElementById("weather-icon");
-      const fallbackEl = document.getElementById("fallback");
 
-      if (!window.maplibregl || !maplibregl.supported()) {
-        fallbackEl.style.display = "flex";
-        roadEl.textContent = "3D NON SUPPORTATO";
-        return;
+      const map = L.map("map", {
+        zoomControl:false,
+        attributionControl:false,
+        dragging:false,
+        touchZoom:false,
+        doubleClickZoom:false,
+        scrollWheelZoom:false,
+        boxZoom:false,
+        keyboard:false,
+        tap:false,
+        fadeAnimation:true,
+        zoomAnimation:true,
+        markerZoomAnimation:false
+      }).setView([DEFAULT.lat,DEFAULT.lng],ZOOM);
+
+      const tiles = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          maxZoom:19,
+          subdomains:"abc",
+          crossOrigin:true,
+          updateWhenIdle:false,
+          keepBuffer:3
+        }
+      ).addTo(map);
+
+      function redrawMap() {
+        map.invalidateSize({pan:false,debounceMoveend:true});
       }
 
-      const map = new maplibregl.Map({
-        container: "map",
-        style: "https://tiles.openfreemap.org/styles/liberty",
-        center: [DEFAULT.lng, DEFAULT.lat],
-        zoom: ZOOM,
-        pitch: PITCH,
-        bearing: 0,
-        attributionControl: false,
-        interactive: false,
-        fadeDuration: 250,
-        canvasContextAttributes: {
-          antialias: true,
-          preserveDrawingBuffer: false
-        }
-      });
+      tiles.on("load",redrawMap);
+
+      if ("ResizeObserver" in window) {
+        const observer = new ResizeObserver(redrawMap);
+        observer.observe(document.getElementById("radar"));
+        observer.observe(document.getElementById("map-stage"));
+      }
 
       let currentHeading = 0;
       let lastAddressAt = 0;
@@ -421,109 +424,25 @@
       let reverseAbort = null;
       let weatherAbort = null;
 
-      map.on("load", () => {
-        try {
-          const layers = map.getStyle().layers || [];
-          let labelLayerId;
-
-          for (const layer of layers) {
-            if (
-              layer.type === "symbol" &&
-              layer.layout &&
-              layer.layout["text-field"]
-            ) {
-              labelLayerId = layer.id;
-              break;
-            }
-          }
-
-          if (!map.getSource("openfreemap-buildings")) {
-            map.addSource("openfreemap-buildings", {
-              url: "https://tiles.openfreemap.org/planet",
-              type: "vector"
-            });
-          }
-
-          map.addLayer(
-            {
-              id: "3d-buildings",
-              source: "openfreemap-buildings",
-              "source-layer": "building",
-              type: "fill-extrusion",
-              minzoom: 15,
-              filter: ["!=", ["get", "hide_3d"], true],
-              paint: {
-                "fill-extrusion-color": [
-                  "interpolate",
-                  ["linear"],
-                  ["coalesce", ["get", "render_height"], 0],
-                  0, "#4d5660",
-                  60, "#59636e",
-                  180, "#66717d"
-                ],
-                "fill-extrusion-height": [
-                  "interpolate",
-                  ["linear"],
-                  ["zoom"],
-                  15, 0,
-                  16, ["coalesce", ["get", "render_height"], 8]
-                ],
-                "fill-extrusion-base": [
-                  "coalesce",
-                  ["get", "render_min_height"],
-                  0
-                ],
-                "fill-extrusion-opacity": .82
-              }
-            },
-            labelLayerId
-          );
-        } catch (error) {
-          console.warn("Edifici 3D non disponibili:", error);
-        }
-
-        map.resize();
-      });
-
-      map.on("error", (event) => {
-        console.warn("Errore mappa:", event.error);
-      });
-
       function normalizeHeading(value) {
         let heading = Number(value);
         if (!Number.isFinite(heading)) return currentHeading;
-
         heading %= 360;
         if (heading < 0) heading += 360;
-
         return heading;
       }
 
-      function setNavigationCamera(lng, lat, heading, speedKmh) {
-        currentHeading = normalizeHeading(heading);
-
-        const zoom =
-          speedKmh >= 80 ? 15.7 :
-          speedKmh >= 45 ? 16.1 :
-          speedKmh >= 15 ? 16.5 :
-          ZOOM;
-
-        map.easeTo({
-          center: [lng, lat],
-          bearing: currentHeading,
-          pitch: PITCH,
-          zoom,
-          duration: 650,
-          easing: t => t * (2 - t)
-        });
-
+      function setHeading(value) {
+        currentHeading = normalizeHeading(value);
+        vehicleEl.style.transform =
+          `translate(-50%,-50%) perspective(300px) rotateX(31deg) rotate(${currentHeading}deg)`;
         headingEl.textContent = `${Math.round(currentHeading)}°`;
       }
 
-      function weatherEmoji(code, isDay) {
-        if (code === 0) return isDay ? "☀️" : "🌙";
-        if ([1,2].includes(code)) return isDay ? "🌤️" : "☁️";
-        if (code === 3) return "☁️";
+      function weatherEmoji(code,isDay) {
+        if (code===0) return isDay?"☀️":"🌙";
+        if ([1,2].includes(code)) return isDay?"🌤️":"☁️";
+        if (code===3) return "☁️";
         if ([45,48].includes(code)) return "🌫️";
         if ([51,53,55,56,57].includes(code)) return "🌦️";
         if ([61,63,65,66,67,80,81,82].includes(code)) return "🌧️";
@@ -532,9 +451,9 @@
         return "🌡️";
       }
 
-      async function updateWeather(lat, lng) {
+      async function updateWeather(lat,lng) {
         const now = Date.now();
-        if (now - lastWeatherAt < WEATHER_UPDATE_MS) return;
+        if (now-lastWeatherAt < WEATHER_UPDATE_MS) return;
         lastWeatherAt = now;
 
         if (weatherAbort) weatherAbort.abort();
@@ -548,10 +467,7 @@
             "&current=temperature_2m,weather_code,is_day" +
             "&temperature_unit=celsius&timezone=auto";
 
-          const response = await fetch(url, {
-            signal: weatherAbort.signal
-          });
-
+          const response = await fetch(url,{signal:weatherAbort.signal});
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const data = await response.json();
@@ -561,11 +477,8 @@
           const isDay = Number(current.is_day) === 1;
 
           temperatureEl.textContent =
-            Number.isFinite(temperature)
-              ? `${Math.round(temperature)}°C`
-              : "--°C";
-
-          weatherIconEl.textContent = weatherEmoji(code, isDay);
+            Number.isFinite(temperature) ? `${Math.round(temperature)}°C` : "--°C";
+          weatherIconEl.textContent = weatherEmoji(code,isDay);
         } catch (error) {
           if (error.name !== "AbortError") {
             temperatureEl.textContent = "--°C";
@@ -574,9 +487,9 @@
         }
       }
 
-      async function reverseGeocode(lat, lng) {
+      async function reverseGeocode(lat,lng) {
         const now = Date.now();
-        if (now - lastAddressAt < ADDRESS_UPDATE_MS) return;
+        if (now-lastAddressAt < ADDRESS_UPDATE_MS) return;
         lastAddressAt = now;
 
         if (reverseAbort) reverseAbort.abort();
@@ -590,8 +503,8 @@
             "&zoom=18&addressdetails=1";
 
           const response = await fetch(url, {
-            signal: reverseAbort.signal,
-            headers: { "Accept-Language": "it" }
+            signal:reverseAbort.signal,
+            headers:{"Accept-Language":"it"}
           });
 
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -600,24 +513,14 @@
           const a = data.address || {};
 
           const street =
-            a.road ||
-            a.pedestrian ||
-            a.footway ||
-            a.path ||
-            a.neighbourhood ||
-            a.suburb ||
-            a.city_district ||
-            a.village ||
-            a.town ||
-            a.city ||
-            "POSIZIONE ATTUALE";
+            a.road || a.pedestrian || a.footway || a.path ||
+            a.neighbourhood || a.suburb || a.city_district ||
+            a.village || a.town || a.city || "POSIZIONE ATTUALE";
 
           const number = a.house_number ? ` ${a.house_number}` : "";
           roadEl.textContent = `${street}${number}`;
         } catch (error) {
-          if (error.name !== "AbortError") {
-            roadEl.textContent = "POSIZIONE ATTUALE";
-          }
+          if (error.name !== "AbortError") roadEl.textContent = "POSIZIONE ATTUALE";
         }
       }
 
@@ -630,39 +533,32 @@
             : 0;
 
         speedEl.textContent = `${speedKmh} km/h`;
-        accuracyEl.textContent =
-          `Precisione GPS ±${Math.round(c.accuracy || 0)} m`;
+        accuracyEl.textContent = `Precisione GPS ±${Math.round(c.accuracy || 0)} m`;
 
-        const heading =
-          Number.isFinite(c.heading) && c.heading >= 0 && speedKmh >= 2
-            ? c.heading
-            : currentHeading;
+        if (Number.isFinite(c.heading) && c.heading >= 0 && speedKmh >= 2) {
+          setHeading(c.heading);
+        }
 
-        setNavigationCamera(
-          c.longitude,
-          c.latitude,
-          heading,
-          speedKmh
-        );
+        map.panTo([c.latitude,c.longitude], {
+          animate:true,
+          duration:.65,
+          easeLinearity:.25,
+          noMoveStart:true
+        });
 
         statusEl.style.background = "#37d66b";
         permissionEl.style.display = "none";
 
-        reverseGeocode(c.latitude, c.longitude);
-        updateWeather(c.latitude, c.longitude);
+        reverseGeocode(c.latitude,c.longitude);
+        updateWeather(c.latitude,c.longitude);
       }
 
       function onPositionError(error) {
         statusEl.style.background = "#ef4b4b";
-
         accuracyEl.textContent =
-          error.code === 1
-            ? "Permesso GPS non concesso"
-            : "Segnale GPS non disponibile";
+          error.code===1 ? "Permesso GPS non concesso" : "Segnale GPS non disponibile";
 
-        if (error.code === 1) {
-          permissionEl.style.display = "flex";
-        }
+        if (error.code===1) permissionEl.style.display = "flex";
       }
 
       function startTracking() {
@@ -677,9 +573,9 @@
           onPosition,
           onPositionError,
           {
-            enableHighAccuracy: true,
-            maximumAge: 500,
-            timeout: 15000
+            enableHighAccuracy:true,
+            maximumAge:500,
+            timeout:15000
           }
         );
       }
@@ -690,23 +586,18 @@
       });
 
       window.addEventListener("load", () => {
-        [100, 350, 900, 1600].forEach(ms => {
-          setTimeout(() => map.resize(), ms);
-        });
-
+        [80,250,700,1500].forEach(ms => setTimeout(redrawMap,ms));
         startTracking();
       });
 
       window.addEventListener("resize", () => {
-        clearTimeout(window.__mapResize);
-        window.__mapResize = setTimeout(() => map.resize(), 130);
+        clearTimeout(window.__resizeTimer);
+        window.__resizeTimer = setTimeout(redrawMap,120);
       });
 
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
-          [50, 300, 800].forEach(ms => {
-            setTimeout(() => map.resize(), ms);
-          });
+          [50,250,700].forEach(ms => setTimeout(redrawMap,ms));
         }
       });
     })();

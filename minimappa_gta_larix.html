@@ -3,439 +3,195 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Minimappa IRL con strade reali</title>
+  <title>Minimappa IRL Navigatore Completo</title>
 
-  <!-- Leaflet 1.9.4 stabile -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin="">
-  </script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <style>
-    :root {
-      --size: 320px;
-      --accent: #8cb7ff;
-      --panel: rgba(8, 10, 14, .92);
-      --text: #ffffff;
-      --green: #6edc8c;
-      --blue: #33ccff;
+    :root{
+      --size:320px;
+      --panel:rgba(15,16,19,.96);
+      --panel2:rgba(28,28,30,.97);
+      --text:#fff;
+      --muted:#aeb3bd;
+      --blue:#48a9ff;
+      --green:#42d66b;
+      --orange:#ffad32;
+      --red:#ff4d4d;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      width:100%;height:100%;margin:0;overflow:hidden;background:transparent;
+      font-family:Arial,Helvetica,sans-serif;-webkit-user-select:none;user-select:none
+    }
+    button,input{font:inherit}
+    #hud{position:fixed;left:18px;bottom:18px;width:var(--size)}
+    #radar-shell{
+      position:relative;width:var(--size);height:var(--size);
+      border:8px solid rgba(8,10,14,.98);border-radius:50%;
+      overflow:hidden;background:#d8d8d8
+    }
+    #map{position:absolute;inset:-18px;background:#d8d8d8;transition:filter .5s}
+    body.night #map{filter:brightness(.57) saturate(.85) contrast(1.2) hue-rotate(175deg)}
+    body.day #map{filter:saturate(1.03) contrast(1.05) brightness(1.03)}
+    .leaflet-container{position:relative;overflow:hidden;outline:0;background:#d8d8d8}
+    .leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,
+    .leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas{
+      position:absolute;left:0;top:0
+    }
+    .leaflet-tile{width:256px;height:256px;user-select:none;-webkit-user-drag:none}
+    .leaflet-zoom-animated{transform-origin:0 0}
+    .leaflet-control-container{display:none!important}
+    #grid{
+      position:absolute;inset:0;z-index:350;pointer-events:none;opacity:.025;
+      background-image:linear-gradient(rgba(255,255,255,.18) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.18) 1px,transparent 1px);
+      background-size:28px 28px;mix-blend-mode:overlay
+    }
+    #crosshair{
+      position:absolute;left:50%;top:50%;width:54px;height:68px;z-index:500;
+      transform:translate(-50%,-52%);pointer-events:none
+    }
+    #player-arrow{
+      position:absolute;left:50%;top:50%;width:34px;height:58px;
+      transform:translate(-50%,-58%) rotate(0deg);transform-origin:50% 50%;
+      transition:transform .22s linear
+    }
+    #player-arrow svg{width:100%;height:100%;display:block}
+    #north{
+      position:absolute;z-index:510;left:50%;top:12px;transform:translateX(-50%);
+      color:#fff;font-weight:900;font-size:15px;letter-spacing:1px;
+      text-shadow:2px 2px 2px #000;pointer-events:none
+    }
+    #status-dot{
+      position:absolute;right:23px;top:23px;z-index:510;width:11px;height:11px;
+      border-radius:50%;background:#f1b400;border:2px solid rgba(0,0,0,.85)
+    }
+    #clock{
+      position:absolute;left:22px;top:20px;z-index:510;color:#fff;font-size:12px;
+      font-weight:900;text-shadow:2px 2px 2px #000
     }
 
-    * { box-sizing: border-box; }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: transparent;
-      font-family: Arial, Helvetica, sans-serif;
-      -webkit-user-select: none;
-      user-select: none;
+    #destination-box{
+      width:calc(var(--size) - 8px);margin:10px auto 0;display:flex;gap:6px;
+      position:relative;z-index:900
     }
-
-    #hud {
-      position: fixed;
-      left: 18px;
-      bottom: 18px;
-      width: var(--size);
-      
+    #destination-input{
+      min-width:0;flex:1;height:38px;padding:0 10px;color:#fff;background:var(--panel);
+      border:3px solid #000;border-radius:2px;outline:none;font-size:13px;font-weight:800;
+      text-transform:uppercase;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)
     }
-
-    #radar-shell {
-      position: relative;
-      width: var(--size);
-      height: var(--size);
-      border: 8px solid rgba(8,10,14,.98);
-      border-radius: 50%;
-      overflow: hidden;
-      background: #d8d8d8;
-      
+    #destination-input::placeholder{color:rgba(255,255,255,.58)}
+    #destination-button,#destination-clear{
+      height:38px;border:3px solid #000;border-radius:2px;color:#fff;background:var(--panel2);
+      font-size:13px;font-weight:900;cursor:pointer;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)
     }
+    #destination-button{padding:0 11px}
+    #destination-clear{width:38px;display:none;font-size:18px}
 
-    #map {
-      position: absolute;
-      inset: -18px;
-      background: #d8d8d8;
-      filter:
-        saturate(1.02)
-        contrast(1.04)
-        brightness(1.02);
+    #poi-row{
+      width:calc(var(--size) - 8px);margin:6px auto 0;display:flex;gap:5px;
+      position:relative;z-index:900
     }
-
-    .leaflet-container {
-      position: relative;
-      overflow: hidden;
-      outline: 0;
-      background: #d8d8d8;
+    .poi-btn{
+      flex:1;height:30px;border:2px solid #000;background:var(--panel2);color:#fff;
+      font-size:14px;border-radius:2px;cursor:pointer
     }
+    body.nav-active #poi-row{display:none}
 
-    .leaflet-pane,
-    .leaflet-tile,
-    .leaflet-marker-icon,
-    .leaflet-marker-shadow,
-    .leaflet-tile-container,
-    .leaflet-pane > svg,
-    .leaflet-pane > canvas {
-      position: absolute;
-      left: 0;
-      top: 0;
+    #info{
+      width:calc(var(--size) - 8px);margin:8px auto 0;position:relative;z-index:800;
+      color:#fff;background:var(--panel);border:4px solid #000;border-radius:2px;
+      padding:9px 10px 8px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),3px 3px 0 rgba(0,0,0,.55)
     }
-
-    .leaflet-tile {
-      width: 256px;
-      height: 256px;
-      user-select: none;
-      -webkit-user-drag: none;
+    #road{
+      font-size:17px;line-height:1.05;font-weight:900;font-style:italic;letter-spacing:.3px;
+      text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      text-shadow:2px 2px 0 #000,-1px -1px 0 #000
     }
-
-    .leaflet-zoom-animated { transform-origin: 0 0; }
-    .leaflet-control-container { display: none !important; }
-
-    #grid {
-      position: absolute;
-      inset: 0;
-      z-index: 350;
-      pointer-events: none;
-      opacity: .025;
-      background-image:
-        linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mix-blend-mode: overlay;
+    #next-turn{
+      display:none;margin-top:7px;padding:7px 8px;background:#151a20;border:3px solid #000;
+      font-size:14px;font-weight:900;line-height:1.2
     }
+    #turn-main{display:flex;align-items:center;gap:7px}
+    #turn-icon{font-size:22px;min-width:25px;text-align:center}
+    #turn-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #turn-distance{margin-top:3px;color:var(--blue);font-size:12px}
 
-    #vignette {
-      position: absolute;
-      inset: 0;
-      z-index: 400;
-      pointer-events: none;
-      border-radius: 50%;
-      
-      background: none;
+    #route-info{
+      display:none;margin-top:7px;padding:7px 8px;border:3px solid #000;background:var(--panel2);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);font-size:12px;font-weight:900
     }
+    #route-destination{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #route-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:5px}
+    #route-stats span{white-space:nowrap}
+    .blue{color:var(--blue)}
+    #traffic-status{font-size:11px;text-align:right}
+    #progress-shell{height:8px;margin-top:7px;background:#111;border:2px solid #000}
+    #progress-bar{display:block;height:100%;width:0;background:var(--blue);transition:width .4s}
 
-    #crosshair {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 54px;
-      height: 68px;
-      z-index: 500;
-      transform: translate(-50%, -52%);
-      pointer-events: none;
+    #stats{
+      margin-top:7px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;
+      font-size:12px;font-weight:900
     }
-
-    
-#player-arrow {
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:34px;
-  height:58px;
-  transform:translate(-50%, -58%) rotate(0deg);
-  transform-origin:50% 50%;
-  
-  transition:transform .22s linear;
-}
-#player-arrow svg{
-  width:100%;
-  height:100%;
-  display:block;
-}
-
-
-    #player-dot { display: none; }
-
-    #north {
-      position: absolute;
-      z-index: 510;
-      left: 50%;
-      top: 12px;
-      transform: translateX(-50%);
-      color: #fff;
-      font-weight: 900;
-      font-size: 15px;
-      letter-spacing: 1px;
-      
-      pointer-events: none;
+    .stat{
+      padding:5px 4px;text-align:center;background:var(--panel2);border:2px solid #000;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);white-space:nowrap;overflow:hidden
     }
-
-    #status-dot {
-      position: absolute;
-      right: 23px;
-      top: 23px;
-      z-index: 510;
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      background: #f1b400;
-      border: 2px solid rgba(0,0,0,.85);
-      
+    #weather{display:flex;align-items:center;justify-content:center;gap:3px}
+    #telemetry{
+      margin-top:6px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+      color:#d8dce3;font-size:10px;font-weight:800
     }
-
-    #info {
-      width: calc(var(--size) - 8px);
-      margin: 10px auto 0;
-      position: relative;
-      z-index: 800;
-      color: #ffffff;
-      background: rgba(18, 18, 18, .94);
-      border: 4px solid #000000;
-      border-radius: 2px;
-      padding: 10px 12px 9px;
-      box-shadow:
-        inset 0 0 0 2px rgba(255,255,255,.10),
-        3px 3px 0 rgba(0,0,0,.55);
+    #telemetry span{
+      padding:3px 4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+      text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
     }
+    #accuracy{opacity:.72;font-size:9px;margin-top:5px;letter-spacing:.2px;text-align:center}
 
-    #road {
-      font-size: 18px;
-      line-height: 1.05;
-      font-weight: 900;
-      font-style: italic;
-      letter-spacing: .4px;
-      text-transform: uppercase;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+    #permission{
+      position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;
+      background:rgba(0,0,0,.82);z-index:5000
     }
-
-    #stats {
-      margin-top: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-      font-weight: 800;
+    #permission-card{
+      width:min(420px,92vw);padding:20px;border-radius:14px;background:rgba(20,22,27,.98);
+      color:#fff;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.65)
     }
-
-    #speed {
-      padding: 4px 9px;
-      border-radius: 2px;
-      background: rgba(28,28,28,.96);
-      border: 3px solid #000000;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-      text-shadow: 2px 2px 0 #000;
+    #permission button{
+      margin-top:14px;border:0;border-radius:10px;padding:12px 18px;font-size:17px;
+      font-weight:800;background:#fff;color:#000
     }
-
-    #heading {
-      color: #ffffff;
-      opacity: 1;
-      padding: 4px 9px;
-      border-radius: 2px;
-      background: rgba(28,28,28,.96);
-      border: 3px solid #000000;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-      text-shadow: 2px 2px 0 #000;
-    }
-
-    #bars {
-      display: flex;
-      gap: 5px;
-      margin-top: 7px;
-    }
-
-    .gta-bar {
-      height: 9px;
-      border-radius: 0;
-      overflow: hidden;
-      background: #1a1a1a;
-      border: 2px solid #000000;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-      flex: 1;
-    }
-
-    .gta-bar > span {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .health > span { background: var(--green); }
-    .armor > span  { background: var(--blue); }
-
-
-    #weather {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: auto;
-      padding: 4px 9px;
-      border-radius: 2px;
-      background: rgba(28,28,28,.96);
-      border: 3px solid #000000;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 900;
-      white-space: nowrap;
-      text-shadow: 2px 2px 0 #000;
-    }
-
-    #weather-icon {
-      color: #ffffff;
-      font-size: 15px;
-      line-height: 1;
-    }
-
-    #temperature {
-      color: #ffffff !important;
-      font-weight: 900;
-    }
-
-    #accuracy {
-      opacity: .74;
-      font-size: 10px;
-      margin-top: 5px;
-      letter-spacing: .2px;
-    }
-
-
-
-    #destination-box {
-      width: calc(var(--size) - 8px);
-      margin: 10px auto 0;
-      display: flex;
-      gap: 6px;
-      position: relative;
-      z-index: 900;
-    }
-
-    #destination-input {
-      min-width: 0;
-      flex: 1;
-      height: 38px;
-      padding: 0 10px;
-      color: #fff;
-      background: rgba(18,18,18,.96);
-      border: 3px solid #000;
-      border-radius: 2px;
-      outline: none;
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-    }
-
-    #destination-input::placeholder { color: rgba(255,255,255,.58); }
-
-    #destination-button, #destination-clear {
-      height: 38px;
-      border: 3px solid #000;
-      border-radius: 2px;
-      color: #fff;
-      background: rgba(28,28,28,.98);
-      font-size: 13px;
-      font-weight: 900;
-      cursor: pointer;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-    }
-
-    #destination-button { padding: 0 11px; }
-    #destination-clear { width: 38px; display: none; }
-
-    #route-info {
-      display: none;
-      margin-top: 7px;
-      padding: 7px 9px;
-      border: 3px solid #000;
-      background: rgba(28,28,28,.96);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-      font-size: 13px;
-      font-weight: 900;
-      line-height: 1.2;
-      text-shadow: 2px 2px 0 #000;
-    }
-
-    #route-destination {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #fff;
-    }
-
-    #route-stats {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      margin-top: 4px;
-      color: #8cb7ff;
-    }
-
-    #permission {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: rgba(0,0,0,.82);
-      z-index: 5000;
-    }
-
-    #permission-card {
-      width: min(420px, 92vw);
-      padding: 20px;
-      border-radius: 14px;
-      background: rgba(20,22,27,.98);
-      color: white;
-      text-align: center;
-      box-shadow: 0 12px 40px rgba(0,0,0,.65);
-    }
-
-    #permission button {
-      margin-top: 14px;
-      border: 0;
-      border-radius: 10px;
-      padding: 12px 18px;
-      font-size: 17px;
-      font-weight: 800;
-      background: white;
-      color: black;
-    }
-
-    @media (max-width: 480px) {
-      :root { --size: 285px; }
-      #hud { left: 12px; bottom: 12px; }
+    @media(max-width:480px){
+      :root{--size:285px}
+      #hud{left:12px;bottom:12px}
+      #road{font-size:15px}
     }
   </style>
 </head>
-
-<body>
+<body class="day">
   <div id="hud">
     <div id="radar-shell">
       <div id="map"></div>
       <div id="grid"></div>
+      <div id="clock">--:--</div>
       <div id="north">N</div>
       <div id="status-dot"></div>
-
       <div id="crosshair">
         <div id="player-arrow">
-<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
-  <rect x="10" y="8" width="40" height="84" rx="10" fill="#ffffff" stroke="#101217" stroke-width="4"/>
-  <rect x="16" y="18" width="28" height="22" rx="4" fill="#3a4658"/>
-  <rect x="16" y="46" width="28" height="26" rx="4" fill="#3a4658"/>
-  <rect x="6" y="18" width="6" height="18" rx="2" fill="#101217"/>
-  <rect x="48" y="18" width="6" height="18" rx="2" fill="#101217"/>
-  <rect x="6" y="60" width="6" height="18" rx="2" fill="#101217"/>
-  <rect x="48" y="60" width="6" height="18" rx="2" fill="#101217"/>
-</svg>
-</div>
-        <div id="player-dot"></div>
+          <svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="8" width="40" height="84" rx="10" fill="#fff" stroke="#101217" stroke-width="4"/>
+            <rect x="16" y="18" width="28" height="22" rx="4" fill="#3a4658"/>
+            <rect x="16" y="46" width="28" height="26" rx="4" fill="#3a4658"/>
+            <rect x="6" y="18" width="6" height="18" rx="2" fill="#101217"/>
+            <rect x="48" y="18" width="6" height="18" rx="2" fill="#101217"/>
+            <rect x="6" y="60" width="6" height="18" rx="2" fill="#101217"/>
+            <rect x="48" y="60" width="6" height="18" rx="2" fill="#101217"/>
+          </svg>
+        </div>
       </div>
-
-      <div id="vignette"></div>
     </div>
-
-
 
     <div id="destination-box">
       <input id="destination-input" type="text" autocomplete="off" placeholder="INSERISCI DESTINAZIONE…" />
@@ -443,15 +199,48 @@
       <button id="destination-clear" type="button" aria-label="Cancella destinazione">✕</button>
     </div>
 
+    <div id="poi-row">
+      <button class="poi-btn" data-poi="fuel" title="Distributore">⛽</button>
+      <button class="poi-btn" data-poi="parking" title="Parcheggio">🅿️</button>
+      <button class="poi-btn" data-poi="hospital" title="Ospedale">🏥</button>
+      <button class="poi-btn" data-poi="fast_food" title="Fast food">🍔</button>
+      <button class="poi-btn" data-poi="cafe" title="Bar">☕</button>
+    </div>
+
     <div id="info">
       <div id="road">RICERCA POSIZIONE…</div>
-      <div id="stats">
-        <span id="speed">0 km/h</span>
-        <span id="heading">0°</span>
-        <span id="weather"><span id="weather-icon">🌡️</span><span id="temperature">--°C</span></span>
+
+      <div id="next-turn">
+        <div id="turn-main"><span id="turn-icon">⬆</span><span id="turn-text">PROSEGUI DRITTO</span></div>
+        <div id="turn-distance">--</div>
       </div>
-      <div id="route-info"><div id="route-destination">DESTINAZIONE</div><div id="route-stats"><span id="route-distance">-- km</span><span id="route-eta">ARRIVO --:--</span></div></div>
-      <div id="bars"><div class="gta-bar health"><span></span></div><div class="gta-bar armor"><span></span></div></div>
+
+      <div id="route-info">
+        <div id="route-destination">DESTINAZIONE</div>
+        <div id="route-stats">
+          <span id="route-distance" class="blue">-- km</span>
+          <span id="route-duration">-- min</span>
+          <span id="route-eta" class="blue">ARRIVO --:--</span>
+          <span id="traffic-status">TRAFFICO: --</span>
+        </div>
+        <div id="progress-shell"><span id="progress-bar"></span></div>
+      </div>
+
+      <div id="stats">
+        <span class="stat" id="speed">0 km/h</span>
+        <span class="stat" id="heading">N 0°</span>
+        <span class="stat" id="weather"><span id="weather-icon">🌡️</span><span id="temperature">--°C</span></span>
+      </div>
+
+      <div id="telemetry">
+        <span id="battery">🔋 --%</span>
+        <span id="network">📶 --</span>
+        <span id="altitude">⛰ -- m</span>
+        <span id="max-speed">MAX 0</span>
+        <span id="session-time">LIVE 00:00</span>
+        <span id="wind-rain">💨 --</span>
+      </div>
+
       <div id="accuracy">GPS in attesa</div>
     </div>
   </div>
@@ -459,445 +248,399 @@
   <div id="permission">
     <div id="permission-card">
       <strong>Consenti la posizione</strong>
-      <div style="margin-top:8px;opacity:.85">
-        La minimappa necessita del GPS del telefono.
-      </div>
+      <div style="margin-top:8px;opacity:.85">La minimappa necessita del GPS del telefono.</div>
       <button id="permission-button">ATTIVA GPS</button>
     </div>
   </div>
 
-  <script>
-    (() => {
-      "use strict";
+<script>
+(() => {
+  "use strict";
 
-      const DEFAULT = { lat: 41.9028, lng: 12.4964 };
-      const ZOOM = 17;
-      const MIN_MOVE_METERS = 1.5;
-      const ADDRESS_UPDATE_MS = 9000;
+  const DEFAULT = {lat:41.9028,lng:12.4964};
+  const ZOOM = 17;
+  const MIN_MOVE_METERS = 1.5;
+  const ADDRESS_UPDATE_MS = 9000;
+  const WEATHER_UPDATE_MS = 5*60*1000;
+  const ROUTE_UPDATE_MS = 12000;
+  const ROUTE_UPDATE_METERS = 35;
+  const sessionStartedAt = Date.now();
 
-      const roadEl = document.getElementById("road");
-      const speedEl = document.getElementById("speed");
-      const headingEl = document.getElementById("heading");
-      const accuracyEl = document.getElementById("accuracy");
-      const arrowEl = document.getElementById("player-arrow");
-      const statusDot = document.getElementById("status-dot");
-      const temperatureEl = document.getElementById("temperature");
-      const weatherIconEl = document.getElementById("weather-icon");
-      const permission = document.getElementById("permission");
-      const permissionButton = document.getElementById("permission-button");
-      const destinationInput = document.getElementById("destination-input");
-      const destinationButton = document.getElementById("destination-button");
-      const destinationClear = document.getElementById("destination-clear");
-      const routeInfoEl = document.getElementById("route-info");
-      const routeDestinationEl = document.getElementById("route-destination");
-      const routeDistanceEl = document.getElementById("route-distance");
-      const routeEtaEl = document.getElementById("route-eta");
+  const $ = id => document.getElementById(id);
+  const roadEl=$("road"), speedEl=$("speed"), headingEl=$("heading");
+  const accuracyEl=$("accuracy"), arrowEl=$("player-arrow"), statusDot=$("status-dot");
+  const temperatureEl=$("temperature"), weatherIconEl=$("weather-icon");
+  const permission=$("permission"), permissionButton=$("permission-button");
+  const destinationInput=$("destination-input"), destinationButton=$("destination-button");
+  const destinationClear=$("destination-clear"), routeInfoEl=$("route-info");
+  const routeDestinationEl=$("route-destination"), routeDistanceEl=$("route-distance");
+  const routeDurationEl=$("route-duration"), routeEtaEl=$("route-eta");
+  const trafficStatusEl=$("traffic-status"), progressBar=$("progress-bar");
+  const nextTurnEl=$("next-turn"), turnIconEl=$("turn-icon");
+  const turnTextEl=$("turn-text"), turnDistanceEl=$("turn-distance");
+  const batteryEl=$("battery"), networkEl=$("network"), altitudeEl=$("altitude");
+  const maxSpeedEl=$("max-speed"), sessionTimeEl=$("session-time"), windRainEl=$("wind-rain");
+  const northEl=$("north"), clockEl=$("clock");
 
-      const map = L.map("map", {
-        zoomControl: false,
-        attributionControl: false,
-        dragging: false,
-        touchZoom: false,
-        doubleClickZoom: false,
-        scrollWheelZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        tap: false,
-        fadeAnimation: true,
-        zoomAnimation: true,
-        markerZoomAnimation: false
-      }).setView([DEFAULT.lat, DEFAULT.lng], ZOOM);
+  const map=L.map("map",{
+    zoomControl:false,attributionControl:false,dragging:false,touchZoom:false,
+    doubleClickZoom:false,scrollWheelZoom:false,boxZoom:false,keyboard:false,tap:false,
+    fadeAnimation:true,zoomAnimation:true,markerZoomAnimation:false
+  }).setView([DEFAULT.lat,DEFAULT.lng],ZOOM);
 
-      const tiles = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          maxZoom: 19,
-          subdomains: "abc",
-          crossOrigin: true,
-          updateWhenIdle: false,
-          keepBuffer: 3
-        }
-      ).addTo(map);
+  const tiles=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+    maxZoom:19,subdomains:"abc",crossOrigin:true,updateWhenIdle:false,keepBuffer:3
+  }).addTo(map);
 
-      function forceMapRedraw() {
-        map.invalidateSize({ pan: false, debounceMoveend: true });
+  function forceMapRedraw(){map.invalidateSize({pan:false,debounceMoveend:true})}
+  tiles.on("load",forceMapRedraw);
+  window.addEventListener("resize",()=>setTimeout(forceMapRedraw,120));
+  if("ResizeObserver" in window){
+    const ro=new ResizeObserver(forceMapRedraw);
+    ro.observe($("radar-shell"));ro.observe($("map"));
+  }
+
+  let lastPosition=null,lastHeading=0,lastAddressAt=0,lastWeatherAt=0;
+  let reverseAbort=null,weatherAbort=null,routeAbort=null,geocodeAbort=null,poiAbort=null;
+  let destination=null,routeLine=null,destinationMarker=null,poiMarkers=[];
+  let lastRouteAt=0,lastRoutePosition=null,routeSteps=[],initialRouteDistance=0;
+  let currentRouteDistance=0,currentRouteDuration=0,maxSpeed=0,lastIsDay=true;
+
+  const rad=v=>v*Math.PI/180;
+  function distanceMeters(a,b){
+    if(!a||!b)return Infinity;
+    const R=6371000,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng);
+    const lat1=rad(a.lat),lat2=rad(b.lat);
+    const x=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
+    return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+  }
+  function normalizeHeading(v){
+    let h=Number(v);if(!Number.isFinite(h))return lastHeading;
+    h%=360;if(h<0)h+=360;return h
+  }
+  function cardinal(h){
+    return ["N","NE","E","SE","S","SO","O","NO"][Math.round(h/45)%8]
+  }
+  function setHeading(v){
+    lastHeading=normalizeHeading(v);
+    arrowEl.style.transform=`translate(-50%,-62%) rotate(${lastHeading}deg)`;
+    headingEl.textContent=`${cardinal(lastHeading)} ${Math.round(lastHeading)}°`;
+    northEl.style.transform=`translateX(-50%) rotate(${-lastHeading}deg)`
+  }
+  function formatDistance(m){
+    if(!Number.isFinite(m))return "-- km";
+    if(m<1000)return `${Math.max(0,Math.round(m))} m`;
+    return `${(m/1000).toFixed(m<10000?1:0)} km`
+  }
+  function formatDuration(s){
+    if(!Number.isFinite(s))return "-- min";
+    const min=Math.max(1,Math.round(s/60));
+    if(min<60)return `${min} min`;
+    return `${Math.floor(min/60)} h ${min%60} min`
+  }
+  function formatArrival(s){
+    if(!Number.isFinite(s))return "ARRIVO --:--";
+    const d=new Date(Date.now()+s*1000);
+    return `ARRIVO ${d.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}`
+  }
+  function instructionIcon(maneuver){
+    const type=(maneuver?.type||"").toLowerCase();
+    const mod=(maneuver?.modifier||"").toLowerCase();
+    if(type==="arrive")return "🏁";
+    if(type.includes("roundabout")||type==="rotary")return "🔄";
+    if(mod.includes("uturn"))return "↩";
+    if(mod.includes("sharp right"))return "↗";
+    if(mod.includes("sharp left"))return "↖";
+    if(mod.includes("right"))return "➡";
+    if(mod.includes("left"))return "⬅";
+    return "⬆"
+  }
+  function instructionText(step){
+    if(!step)return "PROSEGUI";
+    const m=step.maneuver||{},name=step.name?` SU ${step.name}`:"";
+    if(m.type==="arrive")return "DESTINAZIONE RAGGIUNTA";
+    if(m.type==="depart")return `PARTI${name}`;
+    if(m.type==="roundabout"||m.type==="rotary")return `ENTRA IN ROTATORIA${name}`;
+    const mod=(m.modifier||"straight").toLowerCase();
+    if(mod.includes("uturn"))return `INVERTI LA MARCIA${name}`;
+    if(mod.includes("right"))return `GIRA A DESTRA${name}`;
+    if(mod.includes("left"))return `GIRA A SINISTRA${name}`;
+    return `PROSEGUI DRITTO${name}`
+  }
+  function setTraffic(route,currentSpeed){
+    const avgKmh=route.duration>0?(route.distance/route.duration)*3.6:0;
+    let label="SCORREVOLE",color="var(--green)",line="#42d66b";
+    if(avgKmh<18){label="INTENSO";color="var(--red)";line="#ff4d4d"}
+    else if(avgKmh<32){label="RALLENTATO";color="var(--orange)";line="#ffad32"}
+    if(currentSpeed>0&&currentSpeed<8&&avgKmh>18){label="CODA/STIMA";color="var(--red)";line="#ff4d4d"}
+    trafficStatusEl.textContent=`TRAFFICO*: ${label}`;
+    trafficStatusEl.style.color=color;
+    return line
+  }
+  function updateProgress(){
+    if(!initialRouteDistance||!currentRouteDistance)return;
+    const pct=Math.max(0,Math.min(100,(1-currentRouteDistance/initialRouteDistance)*100));
+    progressBar.style.width=`${pct}%`
+  }
+  function setNavUI(active){
+    document.body.classList.toggle("nav-active",active);
+    destinationInput.disabled=active;
+    destinationInput.style.display=active?"none":"";
+    destinationButton.style.display=active?"none":"";
+    destinationClear.style.display=active?"inline-flex":"none";
+  }
+  function clearMapMarkers(){
+    poiMarkers.forEach(m=>map.removeLayer(m));poiMarkers=[]
+  }
+  function clearDestination(){
+    destination=null;routeSteps=[];initialRouteDistance=0;currentRouteDistance=0;
+    lastRouteAt=0;lastRoutePosition=null;
+    if(routeAbort){routeAbort.abort();routeAbort=null}
+    routeInfoEl.style.display="none";nextTurnEl.style.display="none";
+    destinationInput.value="";destinationInput.disabled=false;
+    destinationButton.disabled=false;destinationButton.textContent="VAI";
+    setNavUI(false);progressBar.style.width="0";
+    if(routeLine){map.removeLayer(routeLine);routeLine=null}
+    if(destinationMarker){map.removeLayer(destinationMarker);destinationMarker=null}
+    clearMapMarkers();destinationInput.focus()
+  }
+  async function geocode(query){
+    if(geocodeAbort)geocodeAbort.abort();
+    geocodeAbort=new AbortController();
+    const url="https://nominatim.openstreetmap.org/search"+
+      `?format=jsonv2&limit=1&countrycodes=it&q=${encodeURIComponent(query)}`;
+    const r=await fetch(url,{signal:geocodeAbort.signal,headers:{"Accept-Language":"it"}});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const list=await r.json();if(!list.length)throw new Error("Non trovata");
+    const item=list[0];
+    return {lat:Number(item.lat),lng:Number(item.lon),name:item.display_name||query}
+  }
+  async function activateDestination(dest){
+    destination=dest;
+    routeDestinationEl.textContent=destination.name.toUpperCase();
+    routeInfoEl.style.display="block";setNavUI(true);
+    if(!destinationMarker){
+      destinationMarker=L.circleMarker([dest.lat,dest.lng],{
+        radius:7,color:"#000",weight:3,fillColor:"#ff3b30",fillOpacity:1
+      }).addTo(map)
+    }else destinationMarker.setLatLng([dest.lat,dest.lng]);
+    lastRouteAt=0;initialRouteDistance=0;
+    await updateRoute(true)
+  }
+  async function searchDestination(){
+    const query=destinationInput.value.trim();if(!query)return;
+    destinationButton.disabled=true;destinationButton.textContent="…";
+    try{await activateDestination(await geocode(query))}
+    catch(e){
+      if(e.name!=="AbortError"){
+        routeInfoEl.style.display="block";routeDestinationEl.textContent="DESTINAZIONE NON TROVATA";
+        routeDistanceEl.textContent="RIPROVA";routeDurationEl.textContent="";routeEtaEl.textContent="";
       }
+    }finally{destinationButton.disabled=false;destinationButton.textContent="VAI"}
+  }
+  function updateNextTurn(){
+    if(!lastPosition||!routeSteps.length)return;
+    let chosen=routeSteps[0],best=Infinity;
+    for(const step of routeSteps){
+      const loc=step.maneuver?.location;
+      if(!loc)continue;
+      const d=distanceMeters(lastPosition,{lat:loc[1],lng:loc[0]});
+      if(d<best){best=d;chosen=step}
+    }
+    nextTurnEl.style.display="block";
+    turnIconEl.textContent=instructionIcon(chosen.maneuver);
+    turnTextEl.textContent=instructionText(chosen);
+    turnDistanceEl.textContent=chosen.maneuver?.type==="arrive"?"SEI ARRIVATO":`TRA ${formatDistance(best)}`
+  }
+  async function updateRoute(force=false,currentSpeed=0){
+    if(!destination||!lastPosition)return;
+    const now=Date.now(),moved=distanceMeters(lastRoutePosition,lastPosition);
+    if(!force&&now-lastRouteAt<ROUTE_UPDATE_MS&&moved<ROUTE_UPDATE_METERS){
+      updateNextTurn();return
+    }
+    lastRouteAt=now;lastRoutePosition={...lastPosition};
+    if(routeAbort)routeAbort.abort();routeAbort=new AbortController();
+    try{
+      const url="https://router.project-osrm.org/route/v1/driving/"+
+        `${lastPosition.lng},${lastPosition.lat};${destination.lng},${destination.lat}`+
+        "?overview=full&geometries=geojson&steps=true&annotations=true";
+      const r=await fetch(url,{signal:routeAbort.signal});
+      if(!r.ok)throw new Error(`HTTP ${r.status}`);
+      const data=await r.json(),route=data.routes&&data.routes[0];
+      if(!route)throw new Error("Percorso non disponibile");
+      const latlngs=route.geometry.coordinates.map(([lng,lat])=>[lat,lng]);
+      const lineColor=setTraffic(route,currentSpeed);
+      if(!routeLine)routeLine=L.polyline(latlngs,{color:lineColor,weight:7,opacity:.92}).addTo(map);
+      else{routeLine.setLatLngs(latlngs);routeLine.setStyle({color:lineColor})}
+      routeSteps=(route.legs?.[0]?.steps)||[];
+      currentRouteDistance=route.distance;currentRouteDuration=route.duration;
+      if(!initialRouteDistance)initialRouteDistance=route.distance;
+      routeDistanceEl.textContent=formatDistance(route.distance);
+      routeDurationEl.textContent=formatDuration(route.duration);
+      routeEtaEl.textContent=formatArrival(route.duration);
+      routeInfoEl.style.display="block";updateProgress();updateNextTurn()
+    }catch(e){
+      if(e.name!=="AbortError"){
+        routeDistanceEl.textContent="PERCORSO N/D";routeDurationEl.textContent="";
+        routeEtaEl.textContent="";nextTurnEl.style.display="none"
+      }
+    }
+  }
 
-      tiles.on("load", forceMapRedraw);
-      window.addEventListener("resize", () => {
-        clearTimeout(window.__mapResizeTimer);
-        window.__mapResizeTimer = setTimeout(forceMapRedraw, 120);
+  function weatherEmoji(code,isDay){
+    if(code===0)return isDay?"☀️":"🌙";
+    if([1,2].includes(code))return isDay?"🌤️":"☁️";
+    if(code===3)return "☁️";if([45,48].includes(code))return "🌫️";
+    if([51,53,55,56,57].includes(code))return "🌦️";
+    if([61,63,65,66,67,80,81,82].includes(code))return "🌧️";
+    if([71,73,75,77,85,86].includes(code))return "🌨️";
+    if([95,96,99].includes(code))return "⛈️";return "🌡️"
+  }
+  async function updateWeather(lat,lng){
+    const now=Date.now();if(now-lastWeatherAt<WEATHER_UPDATE_MS)return;
+    lastWeatherAt=now;if(weatherAbort)weatherAbort.abort();weatherAbort=new AbortController();
+    try{
+      const url="https://api.open-meteo.com/v1/forecast"+
+        `?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}`+
+        "&current=temperature_2m,weather_code,is_day,wind_speed_10m,precipitation"+
+        "&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto";
+      const r=await fetch(url,{signal:weatherAbort.signal});
+      if(!r.ok)throw new Error(`HTTP ${r.status}`);
+      const c=(await r.json()).current||{},t=Number(c.temperature_2m),code=Number(c.weather_code);
+      lastIsDay=Number(c.is_day)===1;
+      temperatureEl.textContent=Number.isFinite(t)?`${Math.round(t)}°C`:"--°C";
+      weatherIconEl.textContent=weatherEmoji(code,lastIsDay);
+      const wind=Number(c.wind_speed_10m),rain=Number(c.precipitation);
+      windRainEl.textContent=`💨 ${Number.isFinite(wind)?Math.round(wind):"--"} | 🌧 ${Number.isFinite(rain)?rain.toFixed(1):"--"}`;
+      document.body.classList.toggle("day",lastIsDay);
+      document.body.classList.toggle("night",!lastIsDay)
+    }catch(e){
+      if(e.name!=="AbortError"){temperatureEl.textContent="--°C";weatherIconEl.textContent="🌡️"}
+    }
+  }
+  async function reverseGeocode(lat,lng){
+    const now=Date.now();if(now-lastAddressAt<ADDRESS_UPDATE_MS)return;
+    lastAddressAt=now;if(reverseAbort)reverseAbort.abort();reverseAbort=new AbortController();
+    try{
+      const url=`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+      const r=await fetch(url,{signal:reverseAbort.signal,headers:{"Accept-Language":"it"}});
+      if(!r.ok)throw new Error(`HTTP ${r.status}`);
+      const a=(await r.json()).address||{};
+      const street=a.road||a.pedestrian||a.footway||a.path||a.neighbourhood||
+        a.suburb||a.city_district||a.village||a.town||a.city||"POSIZIONE ATTUALE";
+      roadEl.textContent=`${street}${a.house_number?` ${a.house_number}`:""}`
+    }catch(e){if(e.name!=="AbortError")roadEl.textContent="POSIZIONE ATTUALE"}
+  }
+
+  async function findNearestPoi(type){
+    if(!lastPosition)return;
+    clearMapMarkers();
+    const filters={
+      fuel:'["amenity"="fuel"]',parking:'["amenity"="parking"]',
+      hospital:'["amenity"="hospital"]',fast_food:'["amenity"="fast_food"]',
+      cafe:'["amenity"="cafe"]'
+    };
+    const filter=filters[type];if(!filter)return;
+    if(poiAbort)poiAbort.abort();poiAbort=new AbortController();
+    routeDestinationEl.textContent="RICERCA PUNTO UTILE…";routeInfoEl.style.display="block";
+    try{
+      const q=`[out:json][timeout:15];(node${filter}(around:5000,${lastPosition.lat},${lastPosition.lng});way${filter}(around:5000,${lastPosition.lat},${lastPosition.lng}););out center 20;`;
+      const r=await fetch("https://overpass-api.de/api/interpreter",{
+        method:"POST",body:q,signal:poiAbort.signal,
+        headers:{"Content-Type":"text/plain;charset=UTF-8"}
       });
-
-      if ("ResizeObserver" in window) {
-        const resizeObserver = new ResizeObserver(forceMapRedraw);
-        resizeObserver.observe(document.getElementById("radar-shell"));
-        resizeObserver.observe(document.getElementById("map"));
-      }
-
-      let lastPosition = null;
-      let lastHeading = 0;
-      let lastAddressAt = 0;
-      let reverseAbort = null;
-      let lastWeatherAt = 0;
-      let weatherAbort = null;
-      const WEATHER_UPDATE_MS = 5 * 60 * 1000;
-      const ROUTE_UPDATE_MS = 15000;
-      const ROUTE_UPDATE_METERS = 40;
-      let destination = null;
-      let routeLine = null;
-      let destinationMarker = null;
-      let lastRouteAt = 0;
-      let lastRoutePosition = null;
-      let routeAbort = null;
-      let geocodeAbort = null;
-
-      function toRadians(value) {
-        return value * Math.PI / 180;
-      }
-
-      function distanceMeters(a, b) {
-        if (!a || !b) return Infinity;
-        const R = 6371000;
-        const dLat = toRadians(b.lat - a.lat);
-        const dLng = toRadians(b.lng - a.lng);
-        const lat1 = toRadians(a.lat);
-        const lat2 = toRadians(b.lat);
-        const x = Math.sin(dLat / 2) ** 2 +
-          Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-        return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-      }
-
-      function normalizeHeading(value) {
-        let h = Number(value);
-        if (!Number.isFinite(h)) return lastHeading;
-        h %= 360;
-        if (h < 0) h += 360;
-        return h;
-      }
-
-      function setHeading(value) {
-        lastHeading = normalizeHeading(value);
-        arrowEl.style.transform =
-          `translate(-50%, -62%) rotate(${lastHeading}deg)`;
-        headingEl.textContent = `${Math.round(lastHeading)}°`;
-      }
-
-
-
-
-      function formatDistance(meters) {
-        if (!Number.isFinite(meters)) return "-- km";
-        if (meters < 1000) return `${Math.max(0, Math.round(meters))} m`;
-        return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} km`;
-      }
-
-      function formatArrival(durationSeconds) {
-        if (!Number.isFinite(durationSeconds)) return "ARRIVO --:--";
-        const arrival = new Date(Date.now() + durationSeconds * 1000);
-        return `ARRIVO ${arrival.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`;
-      }
-
-      function clearDestination() {
-        destination = null;
-        lastRouteAt = 0;
-        lastRoutePosition = null;
-
-        if (routeAbort) {
-          routeAbort.abort();
-          routeAbort = null;
-        }
-
-        routeInfoEl.style.display = "none";
-        destinationClear.style.display = "none";
-
-        destinationInput.value = "";
-        destinationInput.disabled = false;
-        destinationInput.style.display = "";
-        destinationButton.disabled = false;
-        destinationButton.textContent = "VAI";
-        destinationButton.style.display = "";
-
-        if (routeLine) {
-          map.removeLayer(routeLine);
-          routeLine = null;
-        }
-
-        if (destinationMarker) {
-          map.removeLayer(destinationMarker);
-          destinationMarker = null;
-        }
-
-        destinationInput.focus();
-      }
-
-      async function searchDestination() {
-        const query = destinationInput.value.trim();
-        if (!query) return;
-        destinationButton.disabled = true;
-        destinationButton.textContent = "…";
-        if (geocodeAbort) geocodeAbort.abort();
-        geocodeAbort = new AbortController();
-        try {
-          const url = "https://nominatim.openstreetmap.org/search" +
-            `?format=jsonv2&limit=1&countrycodes=it&q=${encodeURIComponent(query)}`;
-          const response = await fetch(url, {
-            signal: geocodeAbort.signal,
-            headers: { "Accept-Language": "it" }
-          });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const results = await response.json();
-          if (!results.length) throw new Error("Destinazione non trovata");
-          const item = results[0];
-          destination = {
-            lat: Number(item.lat),
-            lng: Number(item.lon),
-            name: item.display_name || query
-          };
-          routeDestinationEl.textContent = destination.name.toUpperCase();
-          routeInfoEl.style.display = "block";
-
-          destinationInput.disabled = true;
-          destinationInput.style.display = "none";
-          destinationButton.style.display = "none";
-          destinationClear.style.display = "inline-flex";
-          destinationMarker = destinationMarker || L.circleMarker([destination.lat, destination.lng], {
-            radius: 7, color: "#000", weight: 3, fillColor: "#ff3b30", fillOpacity: 1
-          }).addTo(map);
-          destinationMarker.setLatLng([destination.lat, destination.lng]);
-          lastRouteAt = 0;
-          await updateRoute(true);
-        } catch (error) {
-          if (error.name !== "AbortError") {
-            routeInfoEl.style.display = "block";
-            routeDestinationEl.textContent = "DESTINAZIONE NON TROVATA";
-            routeDistanceEl.textContent = "RIPROVA";
-            routeEtaEl.textContent = "";
-          }
-        } finally {
-          destinationButton.disabled = false;
-          destinationButton.textContent = "VAI";
-        }
-      }
-
-      async function updateRoute(force = false) {
-        if (!destination || !lastPosition) return;
-        const now = Date.now();
-        const moved = distanceMeters(lastRoutePosition, lastPosition);
-        if (!force && now - lastRouteAt < ROUTE_UPDATE_MS && moved < ROUTE_UPDATE_METERS) return;
-        lastRouteAt = now;
-        lastRoutePosition = { ...lastPosition };
-        if (routeAbort) routeAbort.abort();
-        routeAbort = new AbortController();
-        try {
-          const url = "https://router.project-osrm.org/route/v1/driving/" +
-            `${lastPosition.lng},${lastPosition.lat};${destination.lng},${destination.lat}` +
-            "?overview=full&geometries=geojson&steps=false";
-          const response = await fetch(url, { signal: routeAbort.signal });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const data = await response.json();
-          const route = data.routes && data.routes[0];
-          if (!route) throw new Error("Percorso non disponibile");
-          const latlngs = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-          if (!routeLine) {
-            routeLine = L.polyline(latlngs, { color: "#3ea6ff", weight: 7, opacity: .9 }).addTo(map);
-          } else {
-            routeLine.setLatLngs(latlngs);
-          }
-          routeDistanceEl.textContent = formatDistance(route.distance);
-          routeEtaEl.textContent = formatArrival(route.duration);
-          routeInfoEl.style.display = "block";
-        } catch (error) {
-          if (error.name !== "AbortError") {
-            routeDistanceEl.textContent = "PERCORSO N/D";
-            routeEtaEl.textContent = "";
-          }
-        }
-      }
-
-      function weatherEmoji(code, isDay) {
-        if (code === 0) return isDay ? "☀️" : "🌙";
-        if ([1, 2].includes(code)) return isDay ? "🌤️" : "☁️";
-        if (code === 3) return "☁️";
-        if ([45, 48].includes(code)) return "🌫️";
-        if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
-        if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "🌧️";
-        if ([71, 73, 75, 77, 85, 86].includes(code)) return "🌨️";
-        if ([95, 96, 99].includes(code)) return "⛈️";
-        return "🌡️";
-      }
-
-      async function updateWeather(lat, lng) {
-        const now = Date.now();
-        if (now - lastWeatherAt < WEATHER_UPDATE_MS) return;
-        lastWeatherAt = now;
-
-        if (weatherAbort) weatherAbort.abort();
-        weatherAbort = new AbortController();
-
-        try {
-          const url =
-            "https://api.open-meteo.com/v1/forecast" +
-            `?latitude=${encodeURIComponent(lat)}` +
-            `&longitude=${encodeURIComponent(lng)}` +
-            "&current=temperature_2m,weather_code,is_day" +
-            "&temperature_unit=celsius&timezone=auto";
-
-          const response = await fetch(url, {
-            signal: weatherAbort.signal
-          });
-
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-          const data = await response.json();
-          const current = data.current || {};
-          const temperature = Number(current.temperature_2m);
-          const code = Number(current.weather_code);
-          const isDay = Number(current.is_day) === 1;
-
-          if (Number.isFinite(temperature)) {
-            temperatureEl.textContent = `${Math.round(temperature)}°C`;
-          } else {
-            temperatureEl.textContent = "--°C";
-          }
-
-          weatherIconEl.textContent = weatherEmoji(code, isDay);
-        } catch (error) {
-          if (error.name !== "AbortError") {
-            temperatureEl.textContent = "--°C";
-            weatherIconEl.textContent = "🌡️";
-          }
-        }
-      }
-
-      async function reverseGeocode(lat, lng) {
-        const now = Date.now();
-        if (now - lastAddressAt < ADDRESS_UPDATE_MS) return;
-        lastAddressAt = now;
-
-        if (reverseAbort) reverseAbort.abort();
-        reverseAbort = new AbortController();
-
-        try {
-          const url =
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2` +
-            `&lat=${encodeURIComponent(lat)}` +
-            `&lon=${encodeURIComponent(lng)}` +
-            `&zoom=18&addressdetails=1`;
-
-          const response = await fetch(url, {
-            signal: reverseAbort.signal,
-            headers: { "Accept-Language": "it" }
-          });
-
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const data = await response.json();
-          const a = data.address || {};
-
-          const street =
-            a.road || a.pedestrian || a.footway || a.path ||
-            a.neighbourhood || a.suburb || a.city_district ||
-            a.village || a.town || a.city || "POSIZIONE ATTUALE";
-
-          const number = a.house_number ? ` ${a.house_number}` : "";
-          roadEl.textContent = `${street}${number}`;
-        } catch (error) {
-          if (error.name !== "AbortError") {
-            roadEl.textContent = "POSIZIONE ATTUALE";
-          }
-        }
-      }
-
-      function onPosition(position) {
-        const c = position.coords;
-        const current = { lat: c.latitude, lng: c.longitude };
-        const moved = distanceMeters(lastPosition, current);
-
-        if (!lastPosition || moved >= MIN_MOVE_METERS) {
-          map.panTo([current.lat, current.lng], {
-            animate: true,
-            duration: 0.65,
-            easeLinearity: 0.25,
-            noMoveStart: true
-          });
-          lastPosition = current;
-        }
-
-        const speedKmh =
-          Number.isFinite(c.speed) && c.speed >= 0
-            ? Math.round(c.speed * 3.6)
-            : 0;
-
-        speedEl.textContent = `${speedKmh} km/h`;
-        accuracyEl.textContent =
-          `Precisione GPS ±${Math.round(c.accuracy || 0)} m`;
-
-        if (Number.isFinite(c.heading) && c.heading >= 0 && speedKmh >= 2) {
-          setHeading(c.heading);
-        }
-
-        statusDot.style.background = "#36d66b";
-        permission.style.display = "none";
-        reverseGeocode(current.lat, current.lng);
-        updateWeather(current.lat, current.lng);
-        updateRoute(false);
-      }
-
-      function onPositionError(error) {
-        statusDot.style.background = "#ef4b4b";
-        accuracyEl.textContent =
-          error.code === 1
-            ? "Permesso GPS non concesso"
-            : "Segnale GPS non disponibile";
-
-        if (error.code === 1) {
-          permission.style.display = "flex";
-        }
-      }
-
-      function startTracking() {
-        if (!("geolocation" in navigator)) {
-          roadEl.textContent = "GPS NON SUPPORTATO";
-          accuracyEl.textContent = "WebView senza geolocalizzazione";
-          statusDot.style.background = "#ef4b4b";
-          return;
-        }
-
-        navigator.geolocation.watchPosition(
-          onPosition,
-          onPositionError,
-          {
-            enableHighAccuracy: true,
-            maximumAge: 500,
-            timeout: 15000
-          }
-        );
-      }
-
-      destinationButton.addEventListener("click", searchDestination);
-      destinationInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") searchDestination();
+      if(!r.ok)throw new Error(`HTTP ${r.status}`);
+      const data=await r.json();
+      const items=(data.elements||[]).map(e=>({
+        lat:e.lat??e.center?.lat,lng:e.lon??e.center?.lon,
+        name:e.tags?.name||({fuel:"Distributore",parking:"Parcheggio",hospital:"Ospedale",fast_food:"Fast food",cafe:"Bar"}[type])
+      })).filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng));
+      items.sort((a,b)=>distanceMeters(lastPosition,a)-distanceMeters(lastPosition,b));
+      if(!items.length)throw new Error("Nessun punto");
+      items.slice(0,5).forEach((p,i)=>{
+        const m=L.circleMarker([p.lat,p.lng],{
+          radius:i===0?7:5,color:"#000",weight:2,fillColor:i===0?"#ffd60a":"#fff",fillOpacity:1
+        }).addTo(map);poiMarkers.push(m)
       });
-      destinationClear.addEventListener("click", clearDestination);
+      await activateDestination(items[0])
+    }catch(e){
+      if(e.name!=="AbortError"){
+        routeDestinationEl.textContent="NESSUN PUNTO UTILE TROVATO";
+        routeDistanceEl.textContent="RIPROVA";routeDurationEl.textContent="";routeEtaEl.textContent=""
+      }
+    }
+  }
 
-      permissionButton.addEventListener("click", () => {
-        permission.style.display = "none";
-        startTracking();
-      });
+  function onPosition(position){
+    const c=position.coords,current={lat:c.latitude,lng:c.longitude};
+    const moved=distanceMeters(lastPosition,current);
+    if(!lastPosition||moved>=MIN_MOVE_METERS){
+      map.panTo([current.lat,current.lng],{animate:true,duration:.65,easeLinearity:.25,noMoveStart:true});
+      lastPosition=current
+    }
+    const speedKmh=Number.isFinite(c.speed)&&c.speed>=0?Math.round(c.speed*3.6):0;
+    maxSpeed=Math.max(maxSpeed,speedKmh);
+    speedEl.textContent=`${speedKmh} km/h`;maxSpeedEl.textContent=`MAX ${maxSpeed}`;
+    altitudeEl.textContent=`⛰ ${Number.isFinite(c.altitude)?Math.round(c.altitude):"--"} m`;
+    accuracyEl.textContent=`GPS ±${Math.round(c.accuracy||0)} m`;
+    if(Number.isFinite(c.heading)&&c.heading>=0&&speedKmh>=2)setHeading(c.heading);
+    statusDot.style.background="#36d66b";permission.style.display="none";
+    reverseGeocode(current.lat,current.lng);updateWeather(current.lat,current.lng);
+    updateRoute(false,speedKmh)
+  }
+  function onPositionError(error){
+    statusDot.style.background="#ef4b4b";
+    accuracyEl.textContent=error.code===1?"Permesso GPS non concesso":"Segnale GPS non disponibile";
+    if(error.code===1)permission.style.display="flex"
+  }
+  function startTracking(){
+    if(!("geolocation" in navigator)){
+      roadEl.textContent="GPS NON SUPPORTATO";accuracyEl.textContent="WebView senza geolocalizzazione";
+      statusDot.style.background="#ef4b4b";return
+    }
+    navigator.geolocation.watchPosition(onPosition,onPositionError,{
+      enableHighAccuracy:true,maximumAge:500,timeout:15000
+    })
+  }
 
-      window.addEventListener("load", () => {
-        [80, 250, 700, 1500].forEach(ms => setTimeout(forceMapRedraw, ms));
-        startTracking();
-      });
+  async function setupBattery(){
+    try{
+      if(!navigator.getBattery)return;
+      const b=await navigator.getBattery();
+      const update=()=>batteryEl.textContent=`🔋 ${Math.round(b.level*100)}%${b.charging?"⚡":""}`;
+      update();b.addEventListener("levelchange",update);b.addEventListener("chargingchange",update)
+    }catch{}
+  }
+  function setupNetwork(){
+    const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+    const update=()=>{
+      if(!c){networkEl.textContent=navigator.onLine?"📶 ONLINE":"📵 OFFLINE";return}
+      networkEl.textContent=`📶 ${(c.effectiveType||c.type||"--").toUpperCase()}`
+    };
+    update();window.addEventListener("online",update);window.addEventListener("offline",update);
+    c?.addEventListener?.("change",update)
+  }
+  function updateClockAndSession(){
+    clockEl.textContent=new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+    const s=Math.floor((Date.now()-sessionStartedAt)/1000),m=Math.floor(s/60),sec=s%60;
+    sessionTimeEl.textContent=`LIVE ${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`
+  }
 
-      document.addEventListener("visibilitychange", () => {
-        if (!document.hidden) {
-          [50, 250, 700].forEach(ms => setTimeout(forceMapRedraw, ms));
-        }
-      });
-    })();
-  </script>
+  destinationButton.addEventListener("click",searchDestination);
+  destinationInput.addEventListener("keydown",e=>{if(e.key==="Enter")searchDestination()});
+  destinationClear.addEventListener("click",clearDestination);
+  document.querySelectorAll(".poi-btn").forEach(b=>b.addEventListener("click",()=>findNearestPoi(b.dataset.poi)));
+  permissionButton.addEventListener("click",()=>{permission.style.display="none";startTracking()});
 
-
+  window.addEventListener("load",()=>{
+    [80,250,700,1500].forEach(ms=>setTimeout(forceMapRedraw,ms));
+    setupBattery();setupNetwork();updateClockAndSession();setInterval(updateClockAndSession,1000);
+    startTracking()
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden)[50,250,700].forEach(ms=>setTimeout(forceMapRedraw,ms))
+  });
+})();
+</script>
 </body>
 </html>

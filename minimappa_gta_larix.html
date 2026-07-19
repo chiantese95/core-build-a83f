@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Minimappa IRL stile GTA</title>
+  <title>Minimappa IRL con strade reali</title>
 
   <!-- Leaflet 1.9.4 stabile -->
   <link
@@ -22,8 +22,8 @@
       --accent: #8cb7ff;
       --panel: rgba(8, 10, 14, .92);
       --text: #ffffff;
-      --green: #62d58a;
-      --blue: #64a8ff;
+      --green: #6edc8c;
+      --blue: #33ccff;
     }
 
     * { box-sizing: border-box; }
@@ -54,7 +54,7 @@
       border: 8px solid rgba(8,10,14,.98);
       border-radius: 50%;
       overflow: hidden;
-      background: #16191f;
+      background: #d8d8d8;
       
     }
 
@@ -63,7 +63,7 @@
       inset: -18px;
       background: #d8d8d8;
       filter:
-        saturate(1.08)
+        saturate(1.02)
         contrast(1.04)
         brightness(1.02);
     }
@@ -72,7 +72,7 @@
       position: relative;
       overflow: hidden;
       outline: 0;
-      background: #20242b;
+      background: #d8d8d8;
     }
 
     .leaflet-pane,
@@ -102,7 +102,7 @@
       inset: 0;
       z-index: 350;
       pointer-events: none;
-      opacity: .08;
+      opacity: .025;
       background-image:
         linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
@@ -192,8 +192,6 @@
       border-top: 1px solid rgba(255,255,255,.09);
       border-radius: 3px 10px 10px 3px;
       padding: 10px 12px 9px;
-      
-      
     }
 
     #road {
@@ -261,9 +259,9 @@
       margin-left: auto;
       padding: 3px 8px;
       border-radius: 5px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.10);
-      color: #fff;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.08);
+      color: #263238;
       font-size: 14px;
       font-weight: 800;
       white-space: nowrap;
@@ -404,9 +402,10 @@
       }).setView([DEFAULT.lat, DEFAULT.lng], ZOOM);
 
       const tiles = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
           maxZoom: 19,
+          subdomains: "abc",
           crossOrigin: true,
           updateWhenIdle: false,
           keepBuffer: 3

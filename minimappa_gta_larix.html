@@ -180,18 +180,18 @@
     }
 
     #info {
-      width: calc(var(--size) - 10px);
-      margin: 12px auto 0;
+      width: calc(var(--size) - 8px);
+      margin: 10px auto 0;
       position: relative;
       z-index: 800;
-      color: var(--text);
-      background:
-        linear-gradient(180deg, rgba(20,24,31,.97), rgba(8,10,14,.96));
-      border-left: 5px solid var(--accent);
-      border-right: 1px solid rgba(255,255,255,.08);
-      border-top: 1px solid rgba(255,255,255,.09);
-      border-radius: 3px 10px 10px 3px;
+      color: #ffffff;
+      background: rgba(18, 18, 18, .94);
+      border: 4px solid #000000;
+      border-radius: 2px;
       padding: 10px 12px 9px;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,.10),
+        3px 3px 0 rgba(0,0,0,.55);
     }
 
     #road {
@@ -204,6 +204,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
     }
 
     #stats {
@@ -217,15 +218,23 @@
     }
 
     #speed {
-      padding: 3px 8px;
-      border-radius: 5px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.08);
+      padding: 4px 9px;
+      border-radius: 2px;
+      background: rgba(28,28,28,.96);
+      border: 3px solid #000000;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+      text-shadow: 2px 2px 0 #000;
     }
 
     #heading {
-      color: #dce8ff;
-      opacity: .95;
+      color: #ffffff;
+      opacity: 1;
+      padding: 4px 9px;
+      border-radius: 2px;
+      background: rgba(28,28,28,.96);
+      border: 3px solid #000000;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+      text-shadow: 2px 2px 0 #000;
     }
 
     #bars {
@@ -235,10 +244,12 @@
     }
 
     .gta-bar {
-      height: 5px;
-      border-radius: 2px;
+      height: 9px;
+      border-radius: 0;
       overflow: hidden;
-      background: rgba(255,255,255,.12);
+      background: #1a1a1a;
+      border: 2px solid #000000;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
       flex: 1;
     }
 
@@ -257,14 +268,16 @@
       align-items: center;
       gap: 6px;
       margin-left: auto;
-      padding: 3px 8px;
-      border-radius: 5px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.10);
+      padding: 4px 9px;
+      border-radius: 2px;
+      background: rgba(28,28,28,.96);
+      border: 3px solid #000000;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
       color: #ffffff;
       font-size: 14px;
       font-weight: 900;
       white-space: nowrap;
+      text-shadow: 2px 2px 0 #000;
     }
 
     #weather-icon {
@@ -283,6 +296,78 @@
       font-size: 10px;
       margin-top: 5px;
       letter-spacing: .2px;
+    }
+
+
+
+    #destination-box {
+      width: calc(var(--size) - 8px);
+      margin: 10px auto 0;
+      display: flex;
+      gap: 6px;
+      position: relative;
+      z-index: 900;
+    }
+
+    #destination-input {
+      min-width: 0;
+      flex: 1;
+      height: 38px;
+      padding: 0 10px;
+      color: #fff;
+      background: rgba(18,18,18,.96);
+      border: 3px solid #000;
+      border-radius: 2px;
+      outline: none;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+
+    #destination-input::placeholder { color: rgba(255,255,255,.58); }
+
+    #destination-button, #destination-clear {
+      height: 38px;
+      border: 3px solid #000;
+      border-radius: 2px;
+      color: #fff;
+      background: rgba(28,28,28,.98);
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+
+    #destination-button { padding: 0 11px; }
+    #destination-clear { width: 38px; display: none; }
+
+    #route-info {
+      display: none;
+      margin-top: 7px;
+      padding: 7px 9px;
+      border: 3px solid #000;
+      background: rgba(28,28,28,.96);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.2;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    #route-destination {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #fff;
+    }
+
+    #route-stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 4px;
+      color: #8cb7ff;
     }
 
     #permission {
@@ -350,6 +435,14 @@
       <div id="vignette"></div>
     </div>
 
+
+
+    <div id="destination-box">
+      <input id="destination-input" type="text" autocomplete="off" placeholder="INSERISCI DESTINAZIONE…" />
+      <button id="destination-button" type="button">VAI</button>
+      <button id="destination-clear" type="button" aria-label="Cancella destinazione">✕</button>
+    </div>
+
     <div id="info">
       <div id="road">RICERCA POSIZIONE…</div>
       <div id="stats">
@@ -357,6 +450,7 @@
         <span id="heading">0°</span>
         <span id="weather"><span id="weather-icon">🌡️</span><span id="temperature">--°C</span></span>
       </div>
+      <div id="route-info"><div id="route-destination">DESTINAZIONE</div><div id="route-stats"><span id="route-distance">-- km</span><span id="route-eta">ARRIVO --:--</span></div></div>
       <div id="bars"><div class="gta-bar health"><span></span></div><div class="gta-bar armor"><span></span></div></div>
       <div id="accuracy">GPS in attesa</div>
     </div>
@@ -391,6 +485,13 @@
       const weatherIconEl = document.getElementById("weather-icon");
       const permission = document.getElementById("permission");
       const permissionButton = document.getElementById("permission-button");
+      const destinationInput = document.getElementById("destination-input");
+      const destinationButton = document.getElementById("destination-button");
+      const destinationClear = document.getElementById("destination-clear");
+      const routeInfoEl = document.getElementById("route-info");
+      const routeDestinationEl = document.getElementById("route-destination");
+      const routeDistanceEl = document.getElementById("route-distance");
+      const routeEtaEl = document.getElementById("route-eta");
 
       const map = L.map("map", {
         zoomControl: false,
@@ -441,6 +542,15 @@
       let lastWeatherAt = 0;
       let weatherAbort = null;
       const WEATHER_UPDATE_MS = 5 * 60 * 1000;
+      const ROUTE_UPDATE_MS = 15000;
+      const ROUTE_UPDATE_METERS = 40;
+      let destination = null;
+      let routeLine = null;
+      let destinationMarker = null;
+      let lastRouteAt = 0;
+      let lastRoutePosition = null;
+      let routeAbort = null;
+      let geocodeAbort = null;
 
       function toRadians(value) {
         return value * Math.PI / 180;
@@ -473,6 +583,137 @@
         headingEl.textContent = `${Math.round(lastHeading)}°`;
       }
 
+
+
+
+      function formatDistance(meters) {
+        if (!Number.isFinite(meters)) return "-- km";
+        if (meters < 1000) return `${Math.max(0, Math.round(meters))} m`;
+        return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} km`;
+      }
+
+      function formatArrival(durationSeconds) {
+        if (!Number.isFinite(durationSeconds)) return "ARRIVO --:--";
+        const arrival = new Date(Date.now() + durationSeconds * 1000);
+        return `ARRIVO ${arrival.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`;
+      }
+
+      function clearDestination() {
+        destination = null;
+        lastRouteAt = 0;
+        lastRoutePosition = null;
+
+        if (routeAbort) {
+          routeAbort.abort();
+          routeAbort = null;
+        }
+
+        routeInfoEl.style.display = "none";
+        destinationClear.style.display = "none";
+
+        destinationInput.value = "";
+        destinationInput.disabled = false;
+        destinationInput.style.display = "";
+        destinationButton.disabled = false;
+        destinationButton.textContent = "VAI";
+        destinationButton.style.display = "";
+
+        if (routeLine) {
+          map.removeLayer(routeLine);
+          routeLine = null;
+        }
+
+        if (destinationMarker) {
+          map.removeLayer(destinationMarker);
+          destinationMarker = null;
+        }
+
+        destinationInput.focus();
+      }
+
+      async function searchDestination() {
+        const query = destinationInput.value.trim();
+        if (!query) return;
+        destinationButton.disabled = true;
+        destinationButton.textContent = "…";
+        if (geocodeAbort) geocodeAbort.abort();
+        geocodeAbort = new AbortController();
+        try {
+          const url = "https://nominatim.openstreetmap.org/search" +
+            `?format=jsonv2&limit=1&countrycodes=it&q=${encodeURIComponent(query)}`;
+          const response = await fetch(url, {
+            signal: geocodeAbort.signal,
+            headers: { "Accept-Language": "it" }
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const results = await response.json();
+          if (!results.length) throw new Error("Destinazione non trovata");
+          const item = results[0];
+          destination = {
+            lat: Number(item.lat),
+            lng: Number(item.lon),
+            name: item.display_name || query
+          };
+          routeDestinationEl.textContent = destination.name.toUpperCase();
+          routeInfoEl.style.display = "block";
+
+          destinationInput.disabled = true;
+          destinationInput.style.display = "none";
+          destinationButton.style.display = "none";
+          destinationClear.style.display = "inline-flex";
+          destinationMarker = destinationMarker || L.circleMarker([destination.lat, destination.lng], {
+            radius: 7, color: "#000", weight: 3, fillColor: "#ff3b30", fillOpacity: 1
+          }).addTo(map);
+          destinationMarker.setLatLng([destination.lat, destination.lng]);
+          lastRouteAt = 0;
+          await updateRoute(true);
+        } catch (error) {
+          if (error.name !== "AbortError") {
+            routeInfoEl.style.display = "block";
+            routeDestinationEl.textContent = "DESTINAZIONE NON TROVATA";
+            routeDistanceEl.textContent = "RIPROVA";
+            routeEtaEl.textContent = "";
+          }
+        } finally {
+          destinationButton.disabled = false;
+          destinationButton.textContent = "VAI";
+        }
+      }
+
+      async function updateRoute(force = false) {
+        if (!destination || !lastPosition) return;
+        const now = Date.now();
+        const moved = distanceMeters(lastRoutePosition, lastPosition);
+        if (!force && now - lastRouteAt < ROUTE_UPDATE_MS && moved < ROUTE_UPDATE_METERS) return;
+        lastRouteAt = now;
+        lastRoutePosition = { ...lastPosition };
+        if (routeAbort) routeAbort.abort();
+        routeAbort = new AbortController();
+        try {
+          const url = "https://router.project-osrm.org/route/v1/driving/" +
+            `${lastPosition.lng},${lastPosition.lat};${destination.lng},${destination.lat}` +
+            "?overview=full&geometries=geojson&steps=false";
+          const response = await fetch(url, { signal: routeAbort.signal });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          const route = data.routes && data.routes[0];
+          if (!route) throw new Error("Percorso non disponibile");
+          const latlngs = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+          if (!routeLine) {
+            routeLine = L.polyline(latlngs, { color: "#3ea6ff", weight: 7, opacity: .9 }).addTo(map);
+          } else {
+            routeLine.setLatLngs(latlngs);
+          }
+          routeDistanceEl.textContent = formatDistance(route.distance);
+          routeEtaEl.textContent = formatArrival(route.duration);
+          routeInfoEl.style.display = "block";
+        } catch (error) {
+          if (error.name !== "AbortError") {
+            routeDistanceEl.textContent = "PERCORSO N/D";
+            routeEtaEl.textContent = "";
+          }
+        }
+      }
 
       function weatherEmoji(code, isDay) {
         if (code === 0) return isDay ? "☀️" : "🌙";
@@ -599,6 +840,7 @@
         permission.style.display = "none";
         reverseGeocode(current.lat, current.lng);
         updateWeather(current.lat, current.lng);
+        updateRoute(false);
       }
 
       function onPositionError(error) {
@@ -632,6 +874,12 @@
         );
       }
 
+      destinationButton.addEventListener("click", searchDestination);
+      destinationInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") searchDestination();
+      });
+      destinationClear.addEventListener("click", clearDestination);
+
       permissionButton.addEventListener("click", () => {
         permission.style.display = "none";
         startTracking();
@@ -649,5 +897,7 @@
       });
     })();
   </script>
+
+
 </body>
 </html>

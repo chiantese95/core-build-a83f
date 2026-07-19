@@ -1,29 +1,18 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Minimappa IRL stile GTA</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Minimappa 3D IRL</title>
 
-  <!-- Leaflet 1.9.4 stabile -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin="">
-  </script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
 
   <style>
     :root {
-      --size: 320px;
-      --accent: #8cb7ff;
-      --panel: rgba(8, 10, 14, .92);
-      --text: #ffffff;
-      --green: #62d58a;
-      --blue: #64a8ff;
+      --size: 340px;
+      --panel: rgba(7, 10, 14, .94);
+      --accent: #7fa6ff;
     }
 
     * { box-sizing: border-box; }
@@ -44,180 +33,134 @@
       left: 18px;
       bottom: 18px;
       width: var(--size);
-      filter: drop-shadow(0 10px 16px rgba(0,0,0,.78));
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.78));
     }
 
-    #radar-shell {
+    #radar {
       position: relative;
       width: var(--size);
       height: var(--size);
-      border: 8px solid rgba(8,10,14,.98);
-      border-radius: 50%;
       overflow: hidden;
-      background: #16191f;
+      border-radius: 50%;
+      border: 7px solid rgba(8,10,14,.98);
+      background: #11161c;
       box-shadow:
         0 0 0 2px rgba(255,255,255,.16),
-        0 0 0 5px rgba(0,0,0,.18),
-        inset 0 0 0 2px rgba(255,255,255,.05);
+        inset 0 0 35px rgba(0,0,0,.24);
     }
 
     #map {
       position: absolute;
-      inset: -18px;
-      background: #d8d8d8;
-      filter:
-        grayscale(.15)
-        saturate(.85)
-        contrast(1.12)
-        brightness(.72);
+      inset: -25px;
     }
 
-    .leaflet-container {
-      position: relative;
-      overflow: hidden;
-      outline: 0;
-      background: #20242b;
+    .maplibregl-control-container,
+    .maplibregl-ctrl-logo {
+      display: none !important;
     }
 
-    .leaflet-pane,
-    .leaflet-tile,
-    .leaflet-marker-icon,
-    .leaflet-marker-shadow,
-    .leaflet-tile-container,
-    .leaflet-pane > svg,
-    .leaflet-pane > canvas {
-      position: absolute;
-      left: 0;
-      top: 0;
-    }
-
-    .leaflet-tile {
-      width: 256px;
-      height: 256px;
-      user-select: none;
-      -webkit-user-drag: none;
-    }
-
-    .leaflet-zoom-animated { transform-origin: 0 0; }
-    .leaflet-control-container { display: none !important; }
-
-    #grid {
+    #shade {
       position: absolute;
       inset: 0;
-      z-index: 350;
-      pointer-events: none;
-      opacity: .08;
-      background-image:
-        linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mix-blend-mode: overlay;
-    }
-
-    #vignette {
-      position: absolute;
-      inset: 0;
-      z-index: 400;
+      z-index: 40;
       pointer-events: none;
       border-radius: 50%;
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(0,0,0,.04) 0%,
+          rgba(0,0,0,.06) 55%,
+          rgba(0,0,0,.32) 100%
+        );
       box-shadow:
-        inset 0 0 12px rgba(0,0,0,.12),
-        inset 0 0 36px rgba(0,0,0,.30);
-      background: none;
+        inset 0 0 22px rgba(0,0,0,.22),
+        inset 0 0 58px rgba(0,0,0,.46);
     }
-
-    #crosshair {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 54px;
-      height: 68px;
-      z-index: 500;
-      transform: translate(-50%, -52%);
-      pointer-events: none;
-    }
-
-    #player-arrow {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 0;
-      height: 0;
-      border-left: 16px solid transparent;
-      border-right: 16px solid transparent;
-      border-bottom: 43px solid #fff;
-      transform: translate(-50%, -64%) rotate(0deg);
-      transform-origin: 50% 78%;
-      filter:
-        drop-shadow(0 0 1px #000)
-        drop-shadow(0 2px 3px rgba(0,0,0,.95));
-      transition: transform .22s linear;
-    }
-
-    #player-arrow::after {
-      content: "";
-      position: absolute;
-      left: -9px;
-      top: 20px;
-      width: 18px;
-      height: 18px;
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 0 3px #101217;
-    }
-
-    #player-dot { display: none; }
 
     #north {
       position: absolute;
-      z-index: 510;
-      left: 50%;
       top: 12px;
+      left: 50%;
+      z-index: 80;
       transform: translateX(-50%);
       color: #fff;
-      font-weight: 900;
       font-size: 15px;
-      letter-spacing: 1px;
+      font-weight: 900;
+      letter-spacing: .8px;
       text-shadow: 0 2px 4px #000;
-      pointer-events: none;
     }
 
-    #status-dot {
+    #status {
       position: absolute;
       right: 23px;
       top: 23px;
-      z-index: 510;
+      z-index: 80;
       width: 11px;
       height: 11px;
       border-radius: 50%;
-      background: #f1b400;
-      border: 2px solid rgba(0,0,0,.85);
-      box-shadow: 0 0 8px currentColor;
+      background: #eab308;
+      border: 2px solid rgba(0,0,0,.82);
+    }
+
+    #vehicle-scene {
+      position: absolute;
+      left: 50%;
+      top: 58%;
+      z-index: 90;
+      width: 78px;
+      height: 122px;
+      transform:
+        translate(-50%, -50%)
+        perspective(230px)
+        rotateX(24deg);
+      transform-origin: 50% 62%;
+      pointer-events: none;
+      filter: drop-shadow(0 9px 6px rgba(0,0,0,.8));
+    }
+
+    #headlight {
+      position: absolute;
+      left: 50%;
+      top: -52px;
+      width: 106px;
+      height: 82px;
+      transform: translateX(-50%);
+      clip-path: polygon(29% 100%, 71% 100%, 100% 0, 0 0);
+      background:
+        radial-gradient(
+          ellipse at bottom,
+          rgba(255,248,205,.46) 0%,
+          rgba(255,248,205,.18) 46%,
+          rgba(255,248,205,0) 76%
+        );
+      opacity: .72;
+    }
+
+    #vehicle-scene svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
     }
 
     #info {
-      width: calc(var(--size) - 10px);
-      margin: -25px auto 0;
       position: relative;
-      z-index: 800;
-      color: var(--text);
-      background:
-        linear-gradient(180deg, rgba(20,24,31,.97), rgba(8,10,14,.96));
-      border-left: 5px solid var(--accent);
-      border-right: 1px solid rgba(255,255,255,.08);
-      border-top: 1px solid rgba(255,255,255,.09);
-      border-radius: 3px 10px 10px 3px;
+      z-index: 100;
+      width: calc(var(--size) - 12px);
+      margin: -26px auto 0;
       padding: 10px 12px 9px;
+      color: #fff;
+      background:
+        linear-gradient(180deg, rgba(18,22,29,.98), rgba(7,9,13,.98));
+      border-left: 5px solid var(--accent);
+      border-radius: 3px 10px 10px 3px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.5);
       text-shadow: 0 2px 2px #000;
-      box-shadow: 0 8px 18px rgba(0,0,0,.48);
     }
 
     #road {
       font-size: 18px;
-      line-height: 1.05;
       font-weight: 900;
       font-style: italic;
-      letter-spacing: .4px;
       text-transform: uppercase;
       white-space: nowrap;
       overflow: hidden;
@@ -225,76 +168,48 @@
     }
 
     #stats {
-      margin-top: 6px;
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-      font-weight: 800;
-    }
-
-    #speed {
-      padding: 3px 8px;
-      border-radius: 5px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.08);
-    }
-
-    #heading {
-      color: #dce8ff;
-      opacity: .95;
-    }
-
-    #bars {
-      display: flex;
-      gap: 5px;
-      margin-top: 7px;
-    }
-
-    .gta-bar {
-      height: 5px;
-      border-radius: 2px;
-      overflow: hidden;
-      background: rgba(255,255,255,.12);
-      flex: 1;
-    }
-
-    .gta-bar > span {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .health > span { background: var(--green); }
-    .armor > span  { background: var(--blue); }
-
-
-    #weather {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      margin-left: auto;
-      padding: 3px 8px;
-      border-radius: 5px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.10);
-      color: #fff;
+      gap: 7px;
+      margin-top: 6px;
       font-size: 14px;
       font-weight: 800;
+    }
+
+    .pill {
+      padding: 3px 7px;
+      border-radius: 5px;
+      background: rgba(255,255,255,.075);
+      border: 1px solid rgba(255,255,255,.1);
       white-space: nowrap;
     }
 
-    #weather-icon {
-      font-size: 15px;
-      line-height: 1;
+    #weather {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     #accuracy {
-      opacity: .74;
-      font-size: 10px;
       margin-top: 5px;
-      letter-spacing: .2px;
+      font-size: 10px;
+      opacity: .72;
+    }
+
+    #fallback {
+      position: absolute;
+      inset: 0;
+      z-index: 95;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+      text-align: center;
+      color: #fff;
+      background: rgba(5,7,10,.92);
+      font-size: 14px;
+      font-weight: 700;
     }
 
     #permission {
@@ -303,63 +218,146 @@
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      background: rgba(0,0,0,.82);
       z-index: 5000;
+      background: rgba(0,0,0,.84);
+      padding: 20px;
     }
 
     #permission-card {
-      width: min(420px, 92vw);
+      width: min(410px,92vw);
       padding: 20px;
       border-radius: 14px;
-      background: rgba(20,22,27,.98);
-      color: white;
+      color: #fff;
       text-align: center;
-      box-shadow: 0 12px 40px rgba(0,0,0,.65);
+      background: #16191f;
     }
 
     #permission button {
       margin-top: 14px;
+      padding: 11px 17px;
       border: 0;
-      border-radius: 10px;
-      padding: 12px 18px;
-      font-size: 17px;
-      font-weight: 800;
-      background: white;
-      color: black;
+      border-radius: 9px;
+      font-size: 16px;
+      font-weight: 900;
     }
 
-    @media (max-width: 480px) {
-      :root { --size: 285px; }
+    @media(max-width:480px) {
+      :root { --size: 295px; }
       #hud { left: 12px; bottom: 12px; }
+      #vehicle-scene { width: 68px; height: 106px; }
     }
   </style>
 </head>
 
 <body>
   <div id="hud">
-    <div id="radar-shell">
+    <div id="radar">
       <div id="map"></div>
-      <div id="grid"></div>
       <div id="north">N</div>
-      <div id="status-dot"></div>
+      <div id="status"></div>
 
-      <div id="crosshair">
-        <div id="player-arrow"></div>
-        <div id="player-dot"></div>
+      <div id="vehicle-scene">
+        <div id="headlight"></div>
+
+        <svg viewBox="0 0 78 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="carBody" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fff"/>
+              <stop offset=".35" stop-color="#f7f7f7"/>
+              <stop offset=".72" stop-color="#d7dbe0"/>
+              <stop offset="1" stop-color="#aeb4bb"/>
+            </linearGradient>
+
+            <linearGradient id="carGlass" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#82909d"/>
+              <stop offset=".45" stop-color="#35424d"/>
+              <stop offset="1" stop-color="#0e151b"/>
+            </linearGradient>
+
+            <linearGradient id="roofShade" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fff"/>
+              <stop offset="1" stop-color="#c9cdd2"/>
+            </linearGradient>
+          </defs>
+
+          <ellipse cx="39" cy="64" rx="28" ry="49" fill="rgba(0,0,0,.38)"/>
+
+          <rect x="5" y="22" width="8" height="25" rx="3.5" fill="#080a0d"/>
+          <rect x="65" y="22" width="8" height="25" rx="3.5" fill="#080a0d"/>
+          <rect x="5" y="73" width="8" height="25" rx="3.5" fill="#080a0d"/>
+          <rect x="65" y="73" width="8" height="25" rx="3.5" fill="#080a0d"/>
+
+          <path
+            d="M24 4
+               Q39 -1 54 4
+               L63 18
+               Q69 31 68 51
+               L68 69
+               Q69 89 61 105
+               Q51 116 39 118
+               Q27 116 17 105
+               Q9 89 10 69
+               L10 51
+               Q9 31 15 18 Z"
+            fill="url(#carBody)"
+            stroke="#171b20"
+            stroke-width="2.6"
+          />
+
+          <path d="M21 8 Q39 1 57 8 L61 24 L17 24 Z"
+                fill="#fbfbfb"
+                stroke="#aeb3b9"
+                stroke-width="1.2"/>
+
+          <path d="M18 28 L60 28 L55 46 L23 46 Z"
+                fill="url(#carGlass)"
+                stroke="#0b1116"
+                stroke-width="1.8"/>
+
+          <rect x="20" y="47" width="38" height="34" rx="7"
+                fill="url(#roofShade)"
+                stroke="#abb0b6"
+                stroke-width="1.3"/>
+
+          <rect x="27" y="51" width="24" height="24" rx="5"
+                fill="#1a242d"
+                stroke="#080d12"
+                stroke-width="1.5"/>
+
+          <path d="M23 84 L55 84 L60 103 Q39 110 18 103 Z"
+                fill="url(#carGlass)"
+                stroke="#0b1116"
+                stroke-width="1.8"/>
+
+          <path d="M18 12 Q23 8 30 8 L28 13 Q22 15 18 16 Z" fill="#fff8cc"/>
+          <path d="M60 12 Q55 8 48 8 L50 13 Q56 15 60 16 Z" fill="#fff8cc"/>
+
+          <path d="M16 97 Q21 101 28 102 L27 107 Q20 106 16 103 Z" fill="#e51d2a"/>
+          <path d="M62 97 Q57 101 50 102 L51 107 Q58 106 62 103 Z" fill="#e51d2a"/>
+
+          <rect x="8" y="34" width="8" height="5" rx="2.5"
+                fill="#eceeef" stroke="#6f757b"/>
+          <rect x="62" y="34" width="8" height="5" rx="2.5"
+                fill="#eceeef" stroke="#6f757b"/>
+        </svg>
       </div>
 
-      <div id="vignette"></div>
+      <div id="shade"></div>
+      <div id="fallback">La visualizzazione 3D richiede WebGL.</div>
     </div>
 
     <div id="info">
       <div id="road">RICERCA POSIZIONE…</div>
+
       <div id="stats">
-        <span id="speed">0 km/h</span>
-        <span id="heading">0°</span>
-        <span id="weather"><span id="weather-icon">🌡️</span><span id="temperature">--°C</span></span>
+        <span id="speed" class="pill">0 km/h</span>
+        <span id="heading" class="pill">0°</span>
+        <span id="weather" class="pill">
+          <span id="weather-icon">🌡️</span>
+          <span id="temperature">--°C</span>
+        </span>
       </div>
-      <div id="bars"><div class="gta-bar health"><span></span></div><div class="gta-bar armor"><span></span></div></div>
+
       <div id="accuracy">GPS in attesa</div>
     </div>
   </div>
@@ -367,7 +365,7 @@
   <div id="permission">
     <div id="permission-card">
       <strong>Consenti la posizione</strong>
-      <div style="margin-top:8px;opacity:.85">
+      <div style="margin-top:8px;opacity:.82">
         La minimappa necessita del GPS del telefono.
       </div>
       <button id="permission-button">ATTIVA GPS</button>
@@ -379,112 +377,158 @@
       "use strict";
 
       const DEFAULT = { lat: 41.9028, lng: 12.4964 };
-      const ZOOM = 17;
-      const MIN_MOVE_METERS = 1.5;
+      const ZOOM = 16.8;
+      const PITCH = 58;
       const ADDRESS_UPDATE_MS = 9000;
+      const WEATHER_UPDATE_MS = 5 * 60 * 1000;
 
       const roadEl = document.getElementById("road");
       const speedEl = document.getElementById("speed");
       const headingEl = document.getElementById("heading");
       const accuracyEl = document.getElementById("accuracy");
-      const arrowEl = document.getElementById("player-arrow");
-      const statusDot = document.getElementById("status-dot");
+      const statusEl = document.getElementById("status");
+      const permissionEl = document.getElementById("permission");
+      const permissionButton = document.getElementById("permission-button");
       const temperatureEl = document.getElementById("temperature");
       const weatherIconEl = document.getElementById("weather-icon");
-      const permission = document.getElementById("permission");
-      const permissionButton = document.getElementById("permission-button");
+      const fallbackEl = document.getElementById("fallback");
 
-      const map = L.map("map", {
-        zoomControl: false,
-        attributionControl: false,
-        dragging: false,
-        touchZoom: false,
-        doubleClickZoom: false,
-        scrollWheelZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        tap: false,
-        fadeAnimation: true,
-        zoomAnimation: true,
-        markerZoomAnimation: false
-      }).setView([DEFAULT.lat, DEFAULT.lng], ZOOM);
-
-      const tiles = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          maxZoom: 19,
-          subdomains: "abc",
-          crossOrigin: true,
-          updateWhenIdle: false,
-          keepBuffer: 3
-        }
-      ).addTo(map);
-
-      function forceMapRedraw() {
-        map.invalidateSize({ pan: false, debounceMoveend: true });
+      if (!window.maplibregl || !maplibregl.supported()) {
+        fallbackEl.style.display = "flex";
+        roadEl.textContent = "3D NON SUPPORTATO";
+        return;
       }
 
-      tiles.on("load", forceMapRedraw);
-      window.addEventListener("resize", () => {
-        clearTimeout(window.__mapResizeTimer);
-        window.__mapResizeTimer = setTimeout(forceMapRedraw, 120);
+      const map = new maplibregl.Map({
+        container: "map",
+        style: "https://tiles.openfreemap.org/styles/liberty",
+        center: [DEFAULT.lng, DEFAULT.lat],
+        zoom: ZOOM,
+        pitch: PITCH,
+        bearing: 0,
+        attributionControl: false,
+        interactive: false,
+        fadeDuration: 250,
+        canvasContextAttributes: {
+          antialias: true,
+          preserveDrawingBuffer: false
+        }
       });
 
-      if ("ResizeObserver" in window) {
-        const resizeObserver = new ResizeObserver(forceMapRedraw);
-        resizeObserver.observe(document.getElementById("radar-shell"));
-        resizeObserver.observe(document.getElementById("map"));
-      }
-
-      let lastPosition = null;
-      let lastHeading = 0;
+      let currentHeading = 0;
       let lastAddressAt = 0;
-      let reverseAbort = null;
       let lastWeatherAt = 0;
+      let reverseAbort = null;
       let weatherAbort = null;
-      const WEATHER_UPDATE_MS = 5 * 60 * 1000;
 
-      function toRadians(value) {
-        return value * Math.PI / 180;
-      }
+      map.on("load", () => {
+        try {
+          const layers = map.getStyle().layers || [];
+          let labelLayerId;
 
-      function distanceMeters(a, b) {
-        if (!a || !b) return Infinity;
-        const R = 6371000;
-        const dLat = toRadians(b.lat - a.lat);
-        const dLng = toRadians(b.lng - a.lng);
-        const lat1 = toRadians(a.lat);
-        const lat2 = toRadians(b.lat);
-        const x = Math.sin(dLat / 2) ** 2 +
-          Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-        return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-      }
+          for (const layer of layers) {
+            if (
+              layer.type === "symbol" &&
+              layer.layout &&
+              layer.layout["text-field"]
+            ) {
+              labelLayerId = layer.id;
+              break;
+            }
+          }
+
+          if (!map.getSource("openfreemap-buildings")) {
+            map.addSource("openfreemap-buildings", {
+              url: "https://tiles.openfreemap.org/planet",
+              type: "vector"
+            });
+          }
+
+          map.addLayer(
+            {
+              id: "3d-buildings",
+              source: "openfreemap-buildings",
+              "source-layer": "building",
+              type: "fill-extrusion",
+              minzoom: 15,
+              filter: ["!=", ["get", "hide_3d"], true],
+              paint: {
+                "fill-extrusion-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["coalesce", ["get", "render_height"], 0],
+                  0, "#4d5660",
+                  60, "#59636e",
+                  180, "#66717d"
+                ],
+                "fill-extrusion-height": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  15, 0,
+                  16, ["coalesce", ["get", "render_height"], 8]
+                ],
+                "fill-extrusion-base": [
+                  "coalesce",
+                  ["get", "render_min_height"],
+                  0
+                ],
+                "fill-extrusion-opacity": .82
+              }
+            },
+            labelLayerId
+          );
+        } catch (error) {
+          console.warn("Edifici 3D non disponibili:", error);
+        }
+
+        map.resize();
+      });
+
+      map.on("error", (event) => {
+        console.warn("Errore mappa:", event.error);
+      });
 
       function normalizeHeading(value) {
-        let h = Number(value);
-        if (!Number.isFinite(h)) return lastHeading;
-        h %= 360;
-        if (h < 0) h += 360;
-        return h;
+        let heading = Number(value);
+        if (!Number.isFinite(heading)) return currentHeading;
+
+        heading %= 360;
+        if (heading < 0) heading += 360;
+
+        return heading;
       }
 
-      function setHeading(value) {
-        lastHeading = normalizeHeading(value);
-        arrowEl.style.transform =
-          `translate(-50%, -62%) rotate(${lastHeading}deg)`;
-        headingEl.textContent = `${Math.round(lastHeading)}°`;
-      }
+      function setNavigationCamera(lng, lat, heading, speedKmh) {
+        currentHeading = normalizeHeading(heading);
 
+        const zoom =
+          speedKmh >= 80 ? 15.7 :
+          speedKmh >= 45 ? 16.1 :
+          speedKmh >= 15 ? 16.5 :
+          ZOOM;
+
+        map.easeTo({
+          center: [lng, lat],
+          bearing: currentHeading,
+          pitch: PITCH,
+          zoom,
+          duration: 650,
+          easing: t => t * (2 - t)
+        });
+
+        headingEl.textContent = `${Math.round(currentHeading)}°`;
+      }
 
       function weatherEmoji(code, isDay) {
         if (code === 0) return isDay ? "☀️" : "🌙";
-        if ([1, 2].includes(code)) return isDay ? "🌤️" : "☁️";
+        if ([1,2].includes(code)) return isDay ? "🌤️" : "☁️";
         if (code === 3) return "☁️";
-        if ([45, 48].includes(code)) return "🌫️";
-        if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
-        if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "🌧️";
-        if ([71, 73, 75, 77, 85, 86].includes(code)) return "🌨️";
-        if ([95, 96, 99].includes(code)) return "⛈️";
+        if ([45,48].includes(code)) return "🌫️";
+        if ([51,53,55,56,57].includes(code)) return "🌦️";
+        if ([61,63,65,66,67,80,81,82].includes(code)) return "🌧️";
+        if ([71,73,75,77,85,86].includes(code)) return "🌨️";
+        if ([95,96,99].includes(code)) return "⛈️";
         return "🌡️";
       }
 
@@ -516,11 +560,10 @@
           const code = Number(current.weather_code);
           const isDay = Number(current.is_day) === 1;
 
-          if (Number.isFinite(temperature)) {
-            temperatureEl.textContent = `${Math.round(temperature)}°C`;
-          } else {
-            temperatureEl.textContent = "--°C";
-          }
+          temperatureEl.textContent =
+            Number.isFinite(temperature)
+              ? `${Math.round(temperature)}°C`
+              : "--°C";
 
           weatherIconEl.textContent = weatherEmoji(code, isDay);
         } catch (error) {
@@ -541,10 +584,10 @@
 
         try {
           const url =
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2` +
+            "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
             `&lat=${encodeURIComponent(lat)}` +
             `&lon=${encodeURIComponent(lng)}` +
-            `&zoom=18&addressdetails=1`;
+            "&zoom=18&addressdetails=1";
 
           const response = await fetch(url, {
             signal: reverseAbort.signal,
@@ -552,13 +595,22 @@
           });
 
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
           const data = await response.json();
           const a = data.address || {};
 
           const street =
-            a.road || a.pedestrian || a.footway || a.path ||
-            a.neighbourhood || a.suburb || a.city_district ||
-            a.village || a.town || a.city || "POSIZIONE ATTUALE";
+            a.road ||
+            a.pedestrian ||
+            a.footway ||
+            a.path ||
+            a.neighbourhood ||
+            a.suburb ||
+            a.city_district ||
+            a.village ||
+            a.town ||
+            a.city ||
+            "POSIZIONE ATTUALE";
 
           const number = a.house_number ? ` ${a.house_number}` : "";
           roadEl.textContent = `${street}${number}`;
@@ -571,18 +623,6 @@
 
       function onPosition(position) {
         const c = position.coords;
-        const current = { lat: c.latitude, lng: c.longitude };
-        const moved = distanceMeters(lastPosition, current);
-
-        if (!lastPosition || moved >= MIN_MOVE_METERS) {
-          map.panTo([current.lat, current.lng], {
-            animate: true,
-            duration: 0.65,
-            easeLinearity: 0.25,
-            noMoveStart: true
-          });
-          lastPosition = current;
-        }
 
         const speedKmh =
           Number.isFinite(c.speed) && c.speed >= 0
@@ -593,25 +633,35 @@
         accuracyEl.textContent =
           `Precisione GPS ±${Math.round(c.accuracy || 0)} m`;
 
-        if (Number.isFinite(c.heading) && c.heading >= 0 && speedKmh >= 2) {
-          setHeading(c.heading);
-        }
+        const heading =
+          Number.isFinite(c.heading) && c.heading >= 0 && speedKmh >= 2
+            ? c.heading
+            : currentHeading;
 
-        statusDot.style.background = "#36d66b";
-        permission.style.display = "none";
-        reverseGeocode(current.lat, current.lng);
-        updateWeather(current.lat, current.lng);
+        setNavigationCamera(
+          c.longitude,
+          c.latitude,
+          heading,
+          speedKmh
+        );
+
+        statusEl.style.background = "#37d66b";
+        permissionEl.style.display = "none";
+
+        reverseGeocode(c.latitude, c.longitude);
+        updateWeather(c.latitude, c.longitude);
       }
 
       function onPositionError(error) {
-        statusDot.style.background = "#ef4b4b";
+        statusEl.style.background = "#ef4b4b";
+
         accuracyEl.textContent =
           error.code === 1
             ? "Permesso GPS non concesso"
             : "Segnale GPS non disponibile";
 
         if (error.code === 1) {
-          permission.style.display = "flex";
+          permissionEl.style.display = "flex";
         }
       }
 
@@ -619,7 +669,7 @@
         if (!("geolocation" in navigator)) {
           roadEl.textContent = "GPS NON SUPPORTATO";
           accuracyEl.textContent = "WebView senza geolocalizzazione";
-          statusDot.style.background = "#ef4b4b";
+          statusEl.style.background = "#ef4b4b";
           return;
         }
 
@@ -635,18 +685,28 @@
       }
 
       permissionButton.addEventListener("click", () => {
-        permission.style.display = "none";
+        permissionEl.style.display = "none";
         startTracking();
       });
 
       window.addEventListener("load", () => {
-        [80, 250, 700, 1500].forEach(ms => setTimeout(forceMapRedraw, ms));
+        [100, 350, 900, 1600].forEach(ms => {
+          setTimeout(() => map.resize(), ms);
+        });
+
         startTracking();
+      });
+
+      window.addEventListener("resize", () => {
+        clearTimeout(window.__mapResize);
+        window.__mapResize = setTimeout(() => map.resize(), 130);
       });
 
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
-          [50, 250, 700].forEach(ms => setTimeout(forceMapRedraw, ms));
+          [50, 300, 800].forEach(ms => {
+            setTimeout(() => map.resize(), ms);
+          });
         }
       });
     })();

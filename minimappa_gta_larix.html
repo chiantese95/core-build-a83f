@@ -163,6 +163,13 @@
       margin-top:14px;border:0;border-radius:10px;padding:12px 18px;font-size:17px;
       font-weight:800;background:#fff;color:#000
     }
+
+    body:not(.nav-active) #telemetry{display:none}
+    body:not(.nav-active) #route-info,
+    body:not(.nav-active) #next-turn{display:none!important}
+    body:not(.nav-active) #info{padding-bottom:8px}
+    body.nav-active #info{padding-bottom:8px}
+
     @media(max-width:480px){
       :root{--size:285px}
       #hud{left:12px;bottom:12px}
@@ -199,14 +206,6 @@
       <button id="destination-clear" type="button" aria-label="Cancella destinazione">✕</button>
     </div>
 
-    <div id="poi-row">
-      <button class="poi-btn" data-poi="fuel" title="Distributore">⛽</button>
-      <button class="poi-btn" data-poi="parking" title="Parcheggio">🅿️</button>
-      <button class="poi-btn" data-poi="hospital" title="Ospedale">🏥</button>
-      <button class="poi-btn" data-poi="fast_food" title="Fast food">🍔</button>
-      <button class="poi-btn" data-poi="cafe" title="Bar">☕</button>
-    </div>
-
     <div id="info">
       <div id="road">RICERCA POSIZIONE…</div>
 
@@ -233,11 +232,8 @@
       </div>
 
       <div id="telemetry">
-        <span id="battery">🔋 --%</span>
         <span id="network">📶 --</span>
         <span id="altitude">⛰ -- m</span>
-        <span id="max-speed">MAX 0</span>
-        <span id="session-time">LIVE 00:00</span>
         <span id="wind-rain">💨 --</span>
       </div>
 
@@ -264,7 +260,6 @@
   const WEATHER_UPDATE_MS = 5*60*1000;
   const ROUTE_UPDATE_MS = 12000;
   const ROUTE_UPDATE_METERS = 35;
-  const sessionStartedAt = Date.now();
 
   const $ = id => document.getElementById(id);
   const roadEl=$("road"), speedEl=$("speed"), headingEl=$("heading");
@@ -278,8 +273,7 @@
   const trafficStatusEl=$("traffic-status"), progressBar=$("progress-bar");
   const nextTurnEl=$("next-turn"), turnIconEl=$("turn-icon");
   const turnTextEl=$("turn-text"), turnDistanceEl=$("turn-distance");
-  const batteryEl=$("battery"), networkEl=$("network"), altitudeEl=$("altitude");
-  const maxSpeedEl=$("max-speed"), sessionTimeEl=$("session-time"), windRainEl=$("wind-rain");
+  const networkEl=$("network"), altitudeEl=$("altitude"), windRainEl=$("wind-rain");
   const northEl=$("north"), clockEl=$("clock");
 
   const map=L.map("map",{
@@ -301,10 +295,10 @@
   }
 
   let lastPosition=null,lastHeading=0,lastAddressAt=0,lastWeatherAt=0;
-  let reverseAbort=null,weatherAbort=null,routeAbort=null,geocodeAbort=null,poiAbort=null;
-  let destination=null,routeLine=null,destinationMarker=null,poiMarkers=[];
+  let reverseAbort=null,weatherAbort=null,routeAbort=null,geocodeAbort=null;
+  let destination=null,routeLine=null,destinationMarker=null;
   let lastRouteAt=0,lastRoutePosition=null,routeSteps=[],initialRouteDistance=0;
-  let currentRouteDistance=0,currentRouteDuration=0,maxSpeed=0,lastIsDay=true;
+  let currentRouteDistance=0,currentRouteDuration=0,lastIsDay=true;
 
   const rad=v=>v*Math.PI/180;
   function distanceMeters(a,b){
@@ -402,7 +396,7 @@
     setNavUI(false);progressBar.style.width="0";
     if(routeLine){map.removeLayer(routeLine);routeLine=null}
     if(destinationMarker){map.removeLayer(destinationMarker);destinationMarker=null}
-    clearMapMarkers();destinationInput.focus()
+    destinationInput.focus()
   }
   async function geocode(query){
     if(geocodeAbort)geocodeAbort.abort();
@@ -532,45 +526,6 @@
     }catch(e){if(e.name!=="AbortError")roadEl.textContent="POSIZIONE ATTUALE"}
   }
 
-  async function findNearestPoi(type){
-    if(!lastPosition)return;
-    clearMapMarkers();
-    const filters={
-      fuel:'["amenity"="fuel"]',parking:'["amenity"="parking"]',
-      hospital:'["amenity"="hospital"]',fast_food:'["amenity"="fast_food"]',
-      cafe:'["amenity"="cafe"]'
-    };
-    const filter=filters[type];if(!filter)return;
-    if(poiAbort)poiAbort.abort();poiAbort=new AbortController();
-    routeDestinationEl.textContent="RICERCA PUNTO UTILE…";routeInfoEl.style.display="block";
-    try{
-      const q=`[out:json][timeout:15];(node${filter}(around:5000,${lastPosition.lat},${lastPosition.lng});way${filter}(around:5000,${lastPosition.lat},${lastPosition.lng}););out center 20;`;
-      const r=await fetch("https://overpass-api.de/api/interpreter",{
-        method:"POST",body:q,signal:poiAbort.signal,
-        headers:{"Content-Type":"text/plain;charset=UTF-8"}
-      });
-      if(!r.ok)throw new Error(`HTTP ${r.status}`);
-      const data=await r.json();
-      const items=(data.elements||[]).map(e=>({
-        lat:e.lat??e.center?.lat,lng:e.lon??e.center?.lon,
-        name:e.tags?.name||({fuel:"Distributore",parking:"Parcheggio",hospital:"Ospedale",fast_food:"Fast food",cafe:"Bar"}[type])
-      })).filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng));
-      items.sort((a,b)=>distanceMeters(lastPosition,a)-distanceMeters(lastPosition,b));
-      if(!items.length)throw new Error("Nessun punto");
-      items.slice(0,5).forEach((p,i)=>{
-        const m=L.circleMarker([p.lat,p.lng],{
-          radius:i===0?7:5,color:"#000",weight:2,fillColor:i===0?"#ffd60a":"#fff",fillOpacity:1
-        }).addTo(map);poiMarkers.push(m)
-      });
-      await activateDestination(items[0])
-    }catch(e){
-      if(e.name!=="AbortError"){
-        routeDestinationEl.textContent="NESSUN PUNTO UTILE TROVATO";
-        routeDistanceEl.textContent="RIPROVA";routeDurationEl.textContent="";routeEtaEl.textContent=""
-      }
-    }
-  }
-
   function onPosition(position){
     const c=position.coords,current={lat:c.latitude,lng:c.longitude};
     const moved=distanceMeters(lastPosition,current);
@@ -579,8 +534,7 @@
       lastPosition=current
     }
     const speedKmh=Number.isFinite(c.speed)&&c.speed>=0?Math.round(c.speed*3.6):0;
-    maxSpeed=Math.max(maxSpeed,speedKmh);
-    speedEl.textContent=`${speedKmh} km/h`;maxSpeedEl.textContent=`MAX ${maxSpeed}`;
+    speedEl.textContent=`${speedKmh} km/h`;
     altitudeEl.textContent=`⛰ ${Number.isFinite(c.altitude)?Math.round(c.altitude):"--"} m`;
     accuracyEl.textContent=`GPS ±${Math.round(c.accuracy||0)} m`;
     if(Number.isFinite(c.heading)&&c.heading>=0&&speedKmh>=2)setHeading(c.heading);
@@ -602,15 +556,6 @@
       enableHighAccuracy:true,maximumAge:500,timeout:15000
     })
   }
-
-  async function setupBattery(){
-    try{
-      if(!navigator.getBattery)return;
-      const b=await navigator.getBattery();
-      const update=()=>batteryEl.textContent=`🔋 ${Math.round(b.level*100)}%${b.charging?"⚡":""}`;
-      update();b.addEventListener("levelchange",update);b.addEventListener("chargingchange",update)
-    }catch{}
-  }
   function setupNetwork(){
     const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
     const update=()=>{
@@ -620,21 +565,18 @@
     update();window.addEventListener("online",update);window.addEventListener("offline",update);
     c?.addEventListener?.("change",update)
   }
-  function updateClockAndSession(){
+  function updateClock(){
     clockEl.textContent=new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
-    const s=Math.floor((Date.now()-sessionStartedAt)/1000),m=Math.floor(s/60),sec=s%60;
-    sessionTimeEl.textContent=`LIVE ${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`
   }
 
   destinationButton.addEventListener("click",searchDestination);
   destinationInput.addEventListener("keydown",e=>{if(e.key==="Enter")searchDestination()});
   destinationClear.addEventListener("click",clearDestination);
-  document.querySelectorAll(".poi-btn").forEach(b=>b.addEventListener("click",()=>findNearestPoi(b.dataset.poi)));
   permissionButton.addEventListener("click",()=>{permission.style.display="none";startTracking()});
 
   window.addEventListener("load",()=>{
     [80,250,700,1500].forEach(ms=>setTimeout(forceMapRedraw,ms));
-    setupBattery();setupNetwork();updateClockAndSession();setInterval(updateClockAndSession,1000);
+    setupNetwork();updateClock();setInterval(updateClock,1000);
     startTracking()
   });
   document.addEventListener("visibilitychange",()=>{

@@ -1,353 +1,365 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>Minimappa 2.5D Larix</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Minimappa IRL stile GTA</title>
+
+  <!-- Leaflet 1.9.4 stabile -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin="">
+  </script>
 
   <style>
-    :root { --size: 330px; --accent:#7fa6ff; }
-    * { box-sizing:border-box; }
-    html,body {
-      width:100%; height:100%; margin:0; overflow:hidden;
-      background:transparent; font-family:Arial,Helvetica,sans-serif;
+    :root {
+      --size: 320px;
+      --accent: #8cb7ff;
+      --panel: rgba(8, 10, 14, .92);
+      --text: #ffffff;
+      --green: #62d58a;
+      --blue: #64a8ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     #hud {
-      position:fixed; left:18px; bottom:18px;
-      width:var(--size);
-      filter:drop-shadow(0 10px 18px rgba(0,0,0,.76));
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      width: var(--size);
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.78));
     }
 
-    #radar {
-      position:relative;
-      width:var(--size); height:var(--size);
-      border-radius:50%; overflow:hidden;
-      border:7px solid rgba(8,10,14,.98);
-      background:#11161c;
-      box-shadow:0 0 0 2px rgba(255,255,255,.16);
-      perspective:430px;
-    }
-
-    #map-stage {
-      position:absolute;
-      left:-75px; right:-75px; top:-110px; bottom:-90px;
-      transform:perspective(430px) rotateX(52deg) scale(1.30);
-      transform-origin:50% 63%;
-      overflow:hidden;
-      background:#20252b;
+    #radar-shell {
+      position: relative;
+      width: var(--size);
+      height: var(--size);
+      border: 8px solid rgba(8,10,14,.98);
+      border-radius: 50%;
+      overflow: hidden;
+      background: #16191f;
+      box-shadow:
+        0 0 0 2px rgba(255,255,255,.16),
+        0 0 0 5px rgba(0,0,0,.18),
+        inset 0 0 0 2px rgba(255,255,255,.05);
     }
 
     #map {
       position: absolute;
-      inset: -35px;
-      background: #cfd4d8;
+      inset: -18px;
+      background: #d8d8d8;
       filter:
-        grayscale(.12)
-        saturate(.82)
-        contrast(1.08)
-        brightness(.88);
+        grayscale(.15)
+        saturate(.85)
+        contrast(1.12)
+        brightness(.72);
     }
 
-    .leaflet-control-container { display:none!important; }
+    .leaflet-container {
+      position: relative;
+      overflow: hidden;
+      outline: 0;
+      background: #20242b;
+    }
 
-    #shade {
+    .leaflet-pane,
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-tile-container,
+    .leaflet-pane > svg,
+    .leaflet-pane > canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    .leaflet-tile {
+      width: 256px;
+      height: 256px;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .leaflet-zoom-animated { transform-origin: 0 0; }
+    .leaflet-control-container { display: none !important; }
+
+    #grid {
       position: absolute;
       inset: 0;
-      z-index: 40;
+      z-index: 350;
+      pointer-events: none;
+      opacity: .08;
+      background-image:
+        linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mix-blend-mode: overlay;
+    }
+
+    #vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 400;
       pointer-events: none;
       border-radius: 50%;
-      background:
-        linear-gradient(
-          to bottom,
-          rgba(0,0,0,.01) 0%,
-          rgba(0,0,0,.025) 62%,
-          rgba(0,0,0,.13) 100%
-        );
       box-shadow:
-        inset 0 0 12px rgba(0,0,0,.10),
-        inset 0 0 30px rgba(0,0,0,.20);
+        inset 0 0 12px rgba(0,0,0,.12),
+        inset 0 0 36px rgba(0,0,0,.30);
+      background: none;
     }
+
+    #crosshair {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 54px;
+      height: 68px;
+      z-index: 500;
+      transform: translate(-50%, -52%);
+      pointer-events: none;
+    }
+
+    
+#player-arrow {
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:34px;
+  height:58px;
+  transform:translate(-50%, -58%) rotate(0deg);
+  transform-origin:50% 50%;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.95));
+  transition:transform .22s linear;
+}
+#player-arrow svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+
+    #player-dot { display: none; }
 
     #north {
-      position:absolute; left:50%; top:12px; z-index:80;
-      transform:translateX(-50%);
-      color:white; font-size:15px; font-weight:900;
-      text-shadow:0 2px 4px #000;
-    }
-
-    #status {
-      position:absolute; right:23px; top:23px; z-index:80;
-      width:11px; height:11px; border-radius:50%;
-      background:#eab308; border:2px solid rgba(0,0,0,.8);
-    }
-
-    #vehicle {
       position: absolute;
+      z-index: 510;
       left: 50%;
-      top: 60%;
-      z-index: 90;
-      width: 88px;
-      height: 132px;
-      transform:
-        translate(-50%, -50%)
-        perspective(300px)
-        rotateX(31deg)
-        rotateZ(0deg);
-      transform-origin: 50% 63%;
-      transition: transform .25s linear;
-      pointer-events: none;
-      filter:
-        drop-shadow(0 11px 7px rgba(0,0,0,.68))
-        drop-shadow(0 2px 2px rgba(255,255,255,.22));
-    }
-
-    #headlight {
-      position: absolute;
-      left: 50%;
-      top: -50px;
-      width: 112px;
-      height: 76px;
+      top: 12px;
       transform: translateX(-50%);
-      clip-path: polygon(33% 100%, 67% 100%, 100% 0, 0 0);
-      background:
-        radial-gradient(
-          ellipse at bottom,
-          rgba(255,250,215,.36) 0%,
-          rgba(255,250,215,.13) 48%,
-          rgba(255,250,215,0) 77%
-        );
-      opacity: .62;
+      color: #fff;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px #000;
+      pointer-events: none;
     }
 
-    #vehicle svg { width:100%; height:100%; overflow:visible; }
+    #status-dot {
+      position: absolute;
+      right: 23px;
+      top: 23px;
+      z-index: 510;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #f1b400;
+      border: 2px solid rgba(0,0,0,.85);
+      box-shadow: 0 0 8px currentColor;
+    }
 
     #info {
-      position:relative; z-index:100;
-      width:calc(var(--size) - 12px);
-      margin:-26px auto 0;
-      padding:10px 12px 9px;
-      color:white;
-      background:linear-gradient(180deg,rgba(18,22,29,.98),rgba(7,9,13,.98));
-      border-left:5px solid var(--accent);
-      border-radius:3px 10px 10px 3px;
-      box-shadow:0 8px 18px rgba(0,0,0,.5);
-      text-shadow:0 2px 2px #000;
+      width: calc(var(--size) - 10px);
+      margin: -25px auto 0;
+      position: relative;
+      z-index: 800;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(20,24,31,.97), rgba(8,10,14,.96));
+      border-left: 5px solid var(--accent);
+      border-right: 1px solid rgba(255,255,255,.08);
+      border-top: 1px solid rgba(255,255,255,.09);
+      border-radius: 3px 10px 10px 3px;
+      padding: 10px 12px 9px;
+      text-shadow: 0 2px 2px #000;
+      box-shadow: 0 8px 18px rgba(0,0,0,.48);
     }
 
     #road {
-      font-size:18px; font-weight:900; font-style:italic;
-      text-transform:uppercase; white-space:nowrap;
-      overflow:hidden; text-overflow:ellipsis;
+      font-size: 18px;
+      line-height: 1.05;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     #stats {
-      display:flex; align-items:center; justify-content:space-between;
-      gap:7px; margin-top:6px; font-size:14px; font-weight:800;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 800;
     }
 
-    .pill {
-      padding:3px 7px; border-radius:5px;
-      background:rgba(255,255,255,.075);
-      border:1px solid rgba(255,255,255,.1);
-      white-space:nowrap;
+    #speed {
+      padding: 3px 8px;
+      border-radius: 5px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.08);
     }
 
-    #weather { display:flex; align-items:center; gap:4px; }
-    #accuracy { margin-top:5px; font-size:10px; opacity:.72; }
+    #heading {
+      color: #dce8ff;
+      opacity: .95;
+    }
+
+    #bars {
+      display: flex;
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .gta-bar {
+      height: 5px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: rgba(255,255,255,.12);
+      flex: 1;
+    }
+
+    .gta-bar > span {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .health > span { background: var(--green); }
+    .armor > span  { background: var(--blue); }
+
+
+    #weather {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: auto;
+      padding: 3px 8px;
+      border-radius: 5px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    #weather-icon {
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    #accuracy {
+      opacity: .74;
+      font-size: 10px;
+      margin-top: 5px;
+      letter-spacing: .2px;
+    }
 
     #permission {
-      position:fixed; inset:0; display:none;
-      align-items:center; justify-content:center;
-      z-index:5000; background:rgba(0,0,0,.84); padding:20px;
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0,0,0,.82);
+      z-index: 5000;
     }
 
     #permission-card {
-      width:min(410px,92vw); padding:20px; border-radius:14px;
-      color:#fff; text-align:center; background:#16191f;
+      width: min(420px, 92vw);
+      padding: 20px;
+      border-radius: 14px;
+      background: rgba(20,22,27,.98);
+      color: white;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(0,0,0,.65);
     }
 
     #permission button {
-      margin-top:14px; padding:11px 17px;
-      border:0; border-radius:9px;
-      font-size:16px; font-weight:900;
+      margin-top: 14px;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 17px;
+      font-weight: 800;
+      background: white;
+      color: black;
     }
 
-    @media(max-width:480px) {
-      :root { --size:295px; }
-      #hud { left:12px; bottom:12px; }
-      #vehicle { width:64px; height:98px; }
+    @media (max-width: 480px) {
+      :root { --size: 285px; }
+      #hud { left: 12px; bottom: 12px; }
     }
   </style>
 </head>
 
 <body>
   <div id="hud">
-    <div id="radar">
-      <div id="map-stage"><div id="map"></div></div>
+    <div id="radar-shell">
+      <div id="map"></div>
+      <div id="grid"></div>
       <div id="north">N</div>
-      <div id="status"></div>
+      <div id="status-dot"></div>
 
-      <div id="vehicle">
-        <div id="headlight"></div>
-        <svg viewBox="0 0 92 140" aria-hidden="true">
-          <defs>
-            <linearGradient id="carBody" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ffffff"/>
-              <stop offset=".30" stop-color="#fafafa"/>
-              <stop offset=".67" stop-color="#dedfe2"/>
-              <stop offset="1" stop-color="#b7bbc0"/>
-            </linearGradient>
-
-            <linearGradient id="carSide" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="#c4c8cd"/>
-              <stop offset=".5" stop-color="#f4f4f4"/>
-              <stop offset="1" stop-color="#aeb3b8"/>
-            </linearGradient>
-
-            <linearGradient id="glassFront" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#8fa0ad"/>
-              <stop offset=".42" stop-color="#394854"/>
-              <stop offset="1" stop-color="#0d151c"/>
-            </linearGradient>
-
-            <linearGradient id="glassRoof" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#394650"/>
-              <stop offset="1" stop-color="#111920"/>
-            </linearGradient>
-
-            <filter id="carShadow" x="-40%" y="-40%" width="180%" height="190%">
-              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity=".68"/>
-            </filter>
-          </defs>
-
-          <!-- ombra a terra -->
-          <ellipse cx="46" cy="76" rx="31" ry="52" fill="rgba(0,0,0,.30)"/>
-
-          <!-- ruote -->
-          <rect x="7" y="32" width="10" height="29" rx="4" fill="#0b0d10"/>
-          <rect x="75" y="32" width="10" height="29" rx="4" fill="#0b0d10"/>
-          <rect x="7" y="88" width="10" height="29" rx="4" fill="#0b0d10"/>
-          <rect x="75" y="88" width="10" height="29" rx="4" fill="#0b0d10"/>
-
-          <!-- carrozzeria principale -->
-          <path
-            d="M29 5
-               Q46 -2 63 5
-               L73 22
-               Q79 39 78 61
-               L78 82
-               Q79 105 70 124
-               Q58 136 46 139
-               Q34 136 22 124
-               Q13 105 14 82
-               L14 61
-               Q13 39 19 22 Z"
-            fill="url(#carBody)"
-            stroke="#171b20"
-            stroke-width="2.8"
-            filter="url(#carShadow)"
-          />
-
-          <!-- fianchi scolpiti -->
-          <path d="M18 31 Q14 65 19 109" fill="none" stroke="#91979d" stroke-width="2"/>
-          <path d="M74 31 Q78 65 73 109" fill="none" stroke="#91979d" stroke-width="2"/>
-
-          <!-- cofano -->
-          <path d="M25 10 Q46 2 67 10 L72 29 L20 29 Z"
-                fill="#fafafa"
-                stroke="#aeb4ba"
-                stroke-width="1.3"/>
-
-          <!-- linee cofano -->
-          <path d="M32 9 L27 28" stroke="#c5c9cd" stroke-width="1.2"/>
-          <path d="M60 9 L65 28" stroke="#c5c9cd" stroke-width="1.2"/>
-
-          <!-- fari anteriori -->
-          <path d="M20 17 Q29 10 37 11 L34 17 Q27 20 20 22 Z" fill="#fff6bd"/>
-          <path d="M72 17 Q63 10 55 11 L58 17 Q65 20 72 22 Z" fill="#fff6bd"/>
-
-          <!-- griglia -->
-          <rect x="35" y="12" width="22" height="5" rx="2" fill="#20262b"/>
-          <line x1="39" y1="12.5" x2="39" y2="16.5" stroke="#59616a"/>
-          <line x1="44" y1="12.5" x2="44" y2="16.5" stroke="#59616a"/>
-          <line x1="49" y1="12.5" x2="49" y2="16.5" stroke="#59616a"/>
-          <line x1="54" y1="12.5" x2="54" y2="16.5" stroke="#59616a"/>
-
-          <!-- parabrezza -->
-          <path d="M22 34 L70 34 L64 55 L28 55 Z"
-                fill="url(#glassFront)"
-                stroke="#0b1116"
-                stroke-width="1.8"/>
-
-          <!-- montanti -->
-          <path d="M28 55 L22 34" stroke="#252d34" stroke-width="1.7"/>
-          <path d="M64 55 L70 34" stroke="#252d34" stroke-width="1.7"/>
-
-          <!-- tetto -->
-          <path d="M27 57 Q46 52 65 57 L67 91 Q46 96 25 91 Z"
-                fill="url(#carSide)"
-                stroke="#a9aeb3"
-                stroke-width="1.4"/>
-
-          <!-- tetto panoramico -->
-          <path d="M34 60 Q46 57 58 60 L59 83 Q46 87 33 83 Z"
-                fill="url(#glassRoof)"
-                stroke="#080d12"
-                stroke-width="1.4"/>
-
-          <!-- riflesso tetto -->
-          <path d="M37 62 Q46 59 55 62" stroke="rgba(255,255,255,.36)" stroke-width="1.2" fill="none"/>
-
-          <!-- finestrini laterali -->
-          <path d="M18 57 L26 57 L25 90 L18 86 Z"
-                fill="#26323b" stroke="#0b1116" stroke-width="1.1"/>
-          <path d="M74 57 L66 57 L67 90 L74 86 Z"
-                fill="#26323b" stroke="#0b1116" stroke-width="1.1"/>
-
-          <!-- lunotto -->
-          <path d="M28 97 L64 97 L70 119 Q46 128 22 119 Z"
-                fill="url(#glassFront)"
-                stroke="#0b1116"
-                stroke-width="1.8"/>
-
-          <!-- spoiler -->
-          <path d="M26 118 Q46 126 66 118 L68 124 Q46 132 24 124 Z"
-                fill="#dfe2e5"
-                stroke="#969ca2"
-                stroke-width="1"/>
-
-          <!-- stop posteriori -->
-          <path d="M20 112 Q28 117 36 118 L34 124 Q26 122 20 118 Z" fill="#df2029"/>
-          <path d="M72 112 Q64 117 56 118 L58 124 Q66 122 72 118 Z" fill="#df2029"/>
-
-          <!-- specchietti -->
-          <rect x="10" y="45" width="10" height="6" rx="3" fill="#eceeef" stroke="#6d7379"/>
-          <rect x="72" y="45" width="10" height="6" rx="3" fill="#eceeef" stroke="#6d7379"/>
-
-          <!-- maniglie -->
-          <rect x="20" y="68" width="5" height="1.5" rx=".7" fill="#858c92"/>
-          <rect x="67" y="68" width="5" height="1.5" rx=".7" fill="#858c92"/>
-          <rect x="20" y="91" width="5" height="1.5" rx=".7" fill="#858c92"/>
-          <rect x="67" y="91" width="5" height="1.5" rx=".7" fill="#858c92"/>
-        </svg>
+      <div id="crosshair">
+        <div id="player-arrow">
+<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="8" width="40" height="84" rx="10" fill="#ffffff" stroke="#101217" stroke-width="4"/>
+  <rect x="16" y="18" width="28" height="22" rx="4" fill="#3a4658"/>
+  <rect x="16" y="46" width="28" height="26" rx="4" fill="#3a4658"/>
+  <rect x="6" y="18" width="6" height="18" rx="2" fill="#101217"/>
+  <rect x="48" y="18" width="6" height="18" rx="2" fill="#101217"/>
+  <rect x="6" y="60" width="6" height="18" rx="2" fill="#101217"/>
+  <rect x="48" y="60" width="6" height="18" rx="2" fill="#101217"/>
+</svg>
+</div>
+        <div id="player-dot"></div>
       </div>
 
-      <div id="shade"></div>
+      <div id="vignette"></div>
     </div>
 
     <div id="info">
       <div id="road">RICERCA POSIZIONE…</div>
       <div id="stats">
-        <span id="speed" class="pill">0 km/h</span>
-        <span id="heading" class="pill">0°</span>
-        <span id="weather" class="pill">
-          <span id="weather-icon">🌡️</span>
-          <span id="temperature">--°C</span>
-        </span>
+        <span id="speed">0 km/h</span>
+        <span id="heading">0°</span>
+        <span id="weather"><span id="weather-icon">🌡️</span><span id="temperature">--°C</span></span>
       </div>
+      <div id="bars"><div class="gta-bar health"><span></span></div><div class="gta-bar armor"><span></span></div></div>
       <div id="accuracy">GPS in attesa</div>
     </div>
   </div>
@@ -355,7 +367,9 @@
   <div id="permission">
     <div id="permission-card">
       <strong>Consenti la posizione</strong>
-      <div style="margin-top:8px;opacity:.82">La minimappa necessita del GPS del telefono.</div>
+      <div style="margin-top:8px;opacity:.85">
+        La minimappa necessita del GPS del telefono.
+      </div>
       <button id="permission-button">ATTIVA GPS</button>
     </div>
   </div>
@@ -364,96 +378,119 @@
     (() => {
       "use strict";
 
-      const DEFAULT = {lat:41.9028,lng:12.4964};
-      const ZOOM = 16;
+      const DEFAULT = { lat: 41.9028, lng: 12.4964 };
+      const ZOOM = 17;
+      const MIN_MOVE_METERS = 1.5;
       const ADDRESS_UPDATE_MS = 9000;
-      const WEATHER_UPDATE_MS = 5 * 60 * 1000;
 
       const roadEl = document.getElementById("road");
       const speedEl = document.getElementById("speed");
       const headingEl = document.getElementById("heading");
       const accuracyEl = document.getElementById("accuracy");
-      const vehicleEl = document.getElementById("vehicle");
-      const statusEl = document.getElementById("status");
-      const permissionEl = document.getElementById("permission");
-      const permissionButton = document.getElementById("permission-button");
+      const arrowEl = document.getElementById("player-arrow");
+      const statusDot = document.getElementById("status-dot");
       const temperatureEl = document.getElementById("temperature");
       const weatherIconEl = document.getElementById("weather-icon");
+      const permission = document.getElementById("permission");
+      const permissionButton = document.getElementById("permission-button");
 
       const map = L.map("map", {
-        zoomControl:false,
-        attributionControl:false,
-        dragging:false,
-        touchZoom:false,
-        doubleClickZoom:false,
-        scrollWheelZoom:false,
-        boxZoom:false,
-        keyboard:false,
-        tap:false,
-        fadeAnimation:true,
-        zoomAnimation:true,
-        markerZoomAnimation:false
-      }).setView([DEFAULT.lat,DEFAULT.lng],ZOOM);
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        scrollWheelZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        tap: false,
+        fadeAnimation: true,
+        zoomAnimation: true,
+        markerZoomAnimation: false
+      }).setView([DEFAULT.lat, DEFAULT.lng], ZOOM);
 
       const tiles = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-          maxZoom:19,
-          subdomains:"abc",
-          crossOrigin:true,
-          updateWhenIdle:false,
-          keepBuffer:3
+          maxZoom: 19,
+          subdomains: "abc",
+          crossOrigin: true,
+          updateWhenIdle: false,
+          keepBuffer: 3
         }
       ).addTo(map);
 
-      function redrawMap() {
-        map.invalidateSize({pan:false,debounceMoveend:true});
+      function forceMapRedraw() {
+        map.invalidateSize({ pan: false, debounceMoveend: true });
       }
 
-      tiles.on("load",redrawMap);
+      tiles.on("load", forceMapRedraw);
+      window.addEventListener("resize", () => {
+        clearTimeout(window.__mapResizeTimer);
+        window.__mapResizeTimer = setTimeout(forceMapRedraw, 120);
+      });
 
       if ("ResizeObserver" in window) {
-        const observer = new ResizeObserver(redrawMap);
-        observer.observe(document.getElementById("radar"));
-        observer.observe(document.getElementById("map-stage"));
+        const resizeObserver = new ResizeObserver(forceMapRedraw);
+        resizeObserver.observe(document.getElementById("radar-shell"));
+        resizeObserver.observe(document.getElementById("map"));
       }
 
-      let currentHeading = 0;
+      let lastPosition = null;
+      let lastHeading = 0;
       let lastAddressAt = 0;
-      let lastWeatherAt = 0;
       let reverseAbort = null;
+      let lastWeatherAt = 0;
       let weatherAbort = null;
+      const WEATHER_UPDATE_MS = 5 * 60 * 1000;
+
+      function toRadians(value) {
+        return value * Math.PI / 180;
+      }
+
+      function distanceMeters(a, b) {
+        if (!a || !b) return Infinity;
+        const R = 6371000;
+        const dLat = toRadians(b.lat - a.lat);
+        const dLng = toRadians(b.lng - a.lng);
+        const lat1 = toRadians(a.lat);
+        const lat2 = toRadians(b.lat);
+        const x = Math.sin(dLat / 2) ** 2 +
+          Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+      }
 
       function normalizeHeading(value) {
-        let heading = Number(value);
-        if (!Number.isFinite(heading)) return currentHeading;
-        heading %= 360;
-        if (heading < 0) heading += 360;
-        return heading;
+        let h = Number(value);
+        if (!Number.isFinite(h)) return lastHeading;
+        h %= 360;
+        if (h < 0) h += 360;
+        return h;
       }
 
       function setHeading(value) {
-        currentHeading = normalizeHeading(value);
-        vehicleEl.style.transform =
-          `translate(-50%,-50%) perspective(300px) rotateX(31deg) rotate(${currentHeading}deg)`;
-        headingEl.textContent = `${Math.round(currentHeading)}°`;
+        lastHeading = normalizeHeading(value);
+        arrowEl.style.transform =
+          `translate(-50%, -62%) rotate(${lastHeading}deg)`;
+        headingEl.textContent = `${Math.round(lastHeading)}°`;
       }
 
-      function weatherEmoji(code,isDay) {
-        if (code===0) return isDay?"☀️":"🌙";
-        if ([1,2].includes(code)) return isDay?"🌤️":"☁️";
-        if (code===3) return "☁️";
-        if ([45,48].includes(code)) return "🌫️";
-        if ([51,53,55,56,57].includes(code)) return "🌦️";
-        if ([61,63,65,66,67,80,81,82].includes(code)) return "🌧️";
-        if ([71,73,75,77,85,86].includes(code)) return "🌨️";
-        if ([95,96,99].includes(code)) return "⛈️";
+
+      function weatherEmoji(code, isDay) {
+        if (code === 0) return isDay ? "☀️" : "🌙";
+        if ([1, 2].includes(code)) return isDay ? "🌤️" : "☁️";
+        if (code === 3) return "☁️";
+        if ([45, 48].includes(code)) return "🌫️";
+        if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
+        if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "🌧️";
+        if ([71, 73, 75, 77, 85, 86].includes(code)) return "🌨️";
+        if ([95, 96, 99].includes(code)) return "⛈️";
         return "🌡️";
       }
 
-      async function updateWeather(lat,lng) {
+      async function updateWeather(lat, lng) {
         const now = Date.now();
-        if (now-lastWeatherAt < WEATHER_UPDATE_MS) return;
+        if (now - lastWeatherAt < WEATHER_UPDATE_MS) return;
         lastWeatherAt = now;
 
         if (weatherAbort) weatherAbort.abort();
@@ -467,7 +504,10 @@
             "&current=temperature_2m,weather_code,is_day" +
             "&temperature_unit=celsius&timezone=auto";
 
-          const response = await fetch(url,{signal:weatherAbort.signal});
+          const response = await fetch(url, {
+            signal: weatherAbort.signal
+          });
+
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const data = await response.json();
@@ -476,9 +516,13 @@
           const code = Number(current.weather_code);
           const isDay = Number(current.is_day) === 1;
 
-          temperatureEl.textContent =
-            Number.isFinite(temperature) ? `${Math.round(temperature)}°C` : "--°C";
-          weatherIconEl.textContent = weatherEmoji(code,isDay);
+          if (Number.isFinite(temperature)) {
+            temperatureEl.textContent = `${Math.round(temperature)}°C`;
+          } else {
+            temperatureEl.textContent = "--°C";
+          }
+
+          weatherIconEl.textContent = weatherEmoji(code, isDay);
         } catch (error) {
           if (error.name !== "AbortError") {
             temperatureEl.textContent = "--°C";
@@ -487,9 +531,9 @@
         }
       }
 
-      async function reverseGeocode(lat,lng) {
+      async function reverseGeocode(lat, lng) {
         const now = Date.now();
-        if (now-lastAddressAt < ADDRESS_UPDATE_MS) return;
+        if (now - lastAddressAt < ADDRESS_UPDATE_MS) return;
         lastAddressAt = now;
 
         if (reverseAbort) reverseAbort.abort();
@@ -497,18 +541,17 @@
 
         try {
           const url =
-            "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2` +
             `&lat=${encodeURIComponent(lat)}` +
             `&lon=${encodeURIComponent(lng)}` +
-            "&zoom=18&addressdetails=1";
+            `&zoom=18&addressdetails=1`;
 
           const response = await fetch(url, {
-            signal:reverseAbort.signal,
-            headers:{"Accept-Language":"it"}
+            signal: reverseAbort.signal,
+            headers: { "Accept-Language": "it" }
           });
 
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
           const data = await response.json();
           const a = data.address || {};
 
@@ -520,12 +563,26 @@
           const number = a.house_number ? ` ${a.house_number}` : "";
           roadEl.textContent = `${street}${number}`;
         } catch (error) {
-          if (error.name !== "AbortError") roadEl.textContent = "POSIZIONE ATTUALE";
+          if (error.name !== "AbortError") {
+            roadEl.textContent = "POSIZIONE ATTUALE";
+          }
         }
       }
 
       function onPosition(position) {
         const c = position.coords;
+        const current = { lat: c.latitude, lng: c.longitude };
+        const moved = distanceMeters(lastPosition, current);
+
+        if (!lastPosition || moved >= MIN_MOVE_METERS) {
+          map.panTo([current.lat, current.lng], {
+            animate: true,
+            duration: 0.65,
+            easeLinearity: 0.25,
+            noMoveStart: true
+          });
+          lastPosition = current;
+        }
 
         const speedKmh =
           Number.isFinite(c.speed) && c.speed >= 0
@@ -533,39 +590,36 @@
             : 0;
 
         speedEl.textContent = `${speedKmh} km/h`;
-        accuracyEl.textContent = `Precisione GPS ±${Math.round(c.accuracy || 0)} m`;
+        accuracyEl.textContent =
+          `Precisione GPS ±${Math.round(c.accuracy || 0)} m`;
 
         if (Number.isFinite(c.heading) && c.heading >= 0 && speedKmh >= 2) {
           setHeading(c.heading);
         }
 
-        map.panTo([c.latitude,c.longitude], {
-          animate:true,
-          duration:.65,
-          easeLinearity:.25,
-          noMoveStart:true
-        });
-
-        statusEl.style.background = "#37d66b";
-        permissionEl.style.display = "none";
-
-        reverseGeocode(c.latitude,c.longitude);
-        updateWeather(c.latitude,c.longitude);
+        statusDot.style.background = "#36d66b";
+        permission.style.display = "none";
+        reverseGeocode(current.lat, current.lng);
+        updateWeather(current.lat, current.lng);
       }
 
       function onPositionError(error) {
-        statusEl.style.background = "#ef4b4b";
+        statusDot.style.background = "#ef4b4b";
         accuracyEl.textContent =
-          error.code===1 ? "Permesso GPS non concesso" : "Segnale GPS non disponibile";
+          error.code === 1
+            ? "Permesso GPS non concesso"
+            : "Segnale GPS non disponibile";
 
-        if (error.code===1) permissionEl.style.display = "flex";
+        if (error.code === 1) {
+          permission.style.display = "flex";
+        }
       }
 
       function startTracking() {
         if (!("geolocation" in navigator)) {
           roadEl.textContent = "GPS NON SUPPORTATO";
           accuracyEl.textContent = "WebView senza geolocalizzazione";
-          statusEl.style.background = "#ef4b4b";
+          statusDot.style.background = "#ef4b4b";
           return;
         }
 
@@ -573,31 +627,26 @@
           onPosition,
           onPositionError,
           {
-            enableHighAccuracy:true,
-            maximumAge:500,
-            timeout:15000
+            enableHighAccuracy: true,
+            maximumAge: 500,
+            timeout: 15000
           }
         );
       }
 
       permissionButton.addEventListener("click", () => {
-        permissionEl.style.display = "none";
+        permission.style.display = "none";
         startTracking();
       });
 
       window.addEventListener("load", () => {
-        [80,250,700,1500].forEach(ms => setTimeout(redrawMap,ms));
+        [80, 250, 700, 1500].forEach(ms => setTimeout(forceMapRedraw, ms));
         startTracking();
-      });
-
-      window.addEventListener("resize", () => {
-        clearTimeout(window.__resizeTimer);
-        window.__resizeTimer = setTimeout(redrawMap,120);
       });
 
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
-          [50,250,700].forEach(ms => setTimeout(redrawMap,ms));
+          [50, 250, 700].forEach(ms => setTimeout(forceMapRedraw, ms));
         }
       });
     })();

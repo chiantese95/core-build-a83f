@@ -63,10 +63,9 @@
       inset: -18px;
       background: #d8d8d8;
       filter:
-        grayscale(.15)
-        saturate(.85)
-        contrast(1.12)
-        brightness(.72);
+        saturate(1.08)
+        contrast(1.04)
+        brightness(1.02);
     }
 
     .leaflet-container {
@@ -182,7 +181,7 @@
 
     #info {
       width: calc(var(--size) - 10px);
-      margin: -25px auto 0;
+      margin: 12px auto 0;
       position: relative;
       z-index: 800;
       color: var(--text);
@@ -405,10 +404,9 @@
       }).setView([DEFAULT.lat, DEFAULT.lng], ZOOM);
 
       const tiles = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
           maxZoom: 19,
-          subdomains: "abc",
           crossOrigin: true,
           updateWhenIdle: false,
           keepBuffer: 3
